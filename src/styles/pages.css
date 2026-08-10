@@ -342,3 +342,14 @@
   display: block; overflow: visible;
   filter: drop-shadow(0 15px 45px rgba(2, 16, 36, 0.95));
 }
+
+/* ============================================================
+   LEGAL PAGES (Terms / Privacy)
+   ============================================================ */
+.legal-content { color: var(--text-secondary); line-height: 1.8; font-size: 1rem; }
+.legal-content h2 { font-family: var(--font-display); font-weight: 600; }
+.legal-content p { margin: 0; }
+.legal-content section { padding-top: 0.4rem; border-top: 1px solid var(--border-faint); }
+.legal-content section:first-of-type { border-top: none; padding-top: 0; }
+.legal-content a { color: var(--accent-ice); text-decoration: underline; text-underline-offset: 2px; }
+.legal-content a:hover { color: var(--accent-soft); }
