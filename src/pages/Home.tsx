@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useCatalog } from "../store/CatalogContext";
 import ProductCard from "../components/ProductCard";
+import { LoadingGrid } from "../components/Loading";
 import { ArrowRight, ShieldIcon, SwapIcon, SparkIcon, ZapIcon } from "../components/Icons";
 
 const valueProps = [
@@ -72,6 +73,20 @@ export default function Home() {
       </div>
 
       {/* EMPTY STATE */}
+      {loading && (
+        <section className="section" style={{ paddingTop: "3rem" }}>
+          <div className="container">
+            <div className="featured-head fade-up">
+              <div>
+                <p className="eyebrow">Live catalog</p>
+                <h2 className="section-title" style={{ marginBottom: 0 }}>Loading the catalog…</h2>
+              </div>
+            </div>
+            <LoadingGrid rows={4} />
+          </div>
+        </section>
+      )}
+
       {empty && (
         <section className="section" style={{ paddingTop: "3rem" }}>
           <div className="container">
