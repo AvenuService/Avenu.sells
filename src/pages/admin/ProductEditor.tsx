@@ -57,6 +57,7 @@ export default function ProductEditor() {
   const [slugError, setSlugError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // if editing and the route id changes, re-sync draft
   useEffect(() => {
@@ -124,6 +125,7 @@ export default function ProductEditor() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validate()) return;
+    setErrorMsg(null);
 
     // cleanup empty features
     const cleanFeatures = draft.features.map((f) => f.trim()).filter(Boolean);
@@ -142,18 +144,20 @@ export default function ProductEditor() {
     setSaving(true);
     try {
       if (editing && existing) {
-        await updateProduct(existing.id, payload);
+        const ok = await updateProduct(existing.id, payload);
+        if (!ok) throw new Error("Failed to update product in database.");
       } else {
         const created = await createProduct(payload);
-        if (created) {
-          navigate(`/admin/products/${created.id}`, { replace: true });
-          setSaved(true);
-          setTimeout(() => setSaved(false), 1600);
-        }
-        return; // navigate-on-success path don't also run the success flags below
+        if (!created) throw new Error("Failed to create product. Check Supabase table & RLS policies.");
+        navigate(`/admin/products/${created.id}`, { replace: true });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1600);
+        return;
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 1600);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
@@ -410,6 +414,7 @@ export default function ProductEditor() {
             </div>
 
             <div className="admin-save-bar">
+              {errorMsg && <div className="al-error" style={{ marginBottom: 8 }}>{errorMsg}</div>}
               {editing && existing && (
                 <Link to={`/product/${existing.slug}`} target="_blank" className="btn btn-ghost btn-sm ae-view-store">
                   <CopyIcon size={14} /> View on storefront
