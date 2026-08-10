@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -37,13 +38,10 @@ type AdminAuthContextValue = {
   session: Session | null;
   isAuthenticated: boolean;
   authState: AuthState;
-  // step 1: verify username + password; generate complex code and fire webhook
   verifyCredentials: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  // step 2: match the code the operator reads from their Discord channel
   verifyCode: (code: string) => { ok: boolean; error?: string };
   clearError: () => void;
   logout: () => void;
-  // expose the pending-code timestamp for UI hint (do NOT expose the code itself to UI)
   pendingAt: number | null;
 };
 
@@ -56,7 +54,7 @@ async function postToWebhook(code: string, meta: { username: string; at: string 
         {
           title: "🔐 Avenu Admin — Login Code",
           description: "Use this code to complete your admin sign-in.",
-          color: 0xC1E8FF, // ice blue accent in decimal
+          color: 0xc1e8ff,
           fields: [
             { name: "Operator", value: `\`${meta.username}\``, inline: true },
             { name: "Triggered", value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true },
@@ -73,28 +71,36 @@ async function postToWebhook(code: string, meta: { username: string; at: string 
       body: JSON.stringify(payload),
     });
   } catch {
-    // swallow — we never want a webhook failure to leak auth state to the UI
+    // swallow — a webhook failure must never leak auth state to the UI
   }
+}
+
+function isValidSession(s: Session | null): s is Session {
+  return !!s && typeof s.expiresAt === "number" && s.expiresAt > Date.now();
 }
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [stored, setStored] = useLocalStorage<Session | null>(SESSION_KEY, null);
-  const authStateRef = useState<AuthState>({ status: "idle" });
-  const [authState, setAuthState] = authStateRef;
+  const [authState, setAuthState] = useState<AuthState>({ status: "idle" });
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const [pendingAt, setPendingAt] = useState<number | null>(null);
 
-  const session = stored &&
-    typeof stored.expiresAt === "number" &&
-    stored.expiresAt > Date.now()
-    ? stored
-    : (() => {
-        if (stored && stored.expiresAt <= Date.now() && typeof window !== "undefined") {
-          setStored(null);
-        }
-        return null;
-      })();
+  // Clean expired sessions in an effect — NEVER during render.
+  useEffect(() => {
+    if (stored && !isValidSession(stored)) {
+      setStored(null);
+    }
+  }, [stored, setStored]);
 
+  // Recheck the session periodically (every minute) so expiry is enforced live.
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      if (stored && !isValidSession(stored)) setStored(null);
+    }, 60_000);
+    return () => window.clearInterval(t);
+  }, [stored, setStored]);
+
+  const session = isValidSession(stored) ? stored : null;
   const isAuthenticated = !!session;
 
   const verifyCredentials = useCallback<AdminAuthContextValue["verifyCredentials"]>(
@@ -118,18 +124,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     (code) => {
       if (!pendingCode) return { ok: false, error: "No pending login attempt." };
       const normalize = (s: string) => s.trim().toUpperCase().replace(/\s+/g, "");
-      const matches = normalize(code) === normalize(pendingCode);
-      if (!matches) {
+      if (normalize(code) !== normalize(pendingCode)) {
         setAuthState({ status: "error", message: "Wrong code. Check your Discord channel and try again." });
         return { ok: false, error: "Wrong code." };
       }
       const now = Date.now();
-      const next: Session = {
+      setStored({
         token: generateComplexCode(3, 6),
         issuedAt: now,
         expiresAt: now + SESSION_TTL,
-      };
-      setStored(next);
+      });
       setPendingCode(null);
       setPendingAt(null);
       setAuthState({ status: "idle" });
