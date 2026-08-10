@@ -9,8 +9,6 @@ const navLinks = [
   { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
   { to: "/shop?category=software", label: "Software" },
-  { to: "/shop?category=audio", label: "Audio" },
-  { to: "/admin", label: "Admin" },
 ];
 
 export default function Navbar() {

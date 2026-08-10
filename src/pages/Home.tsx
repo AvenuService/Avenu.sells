@@ -42,7 +42,7 @@ export default function Home() {
             </p>
             <div className="hero-cta">
               <Link to="/shop" className="btn btn-primary btn-lg">Browse the catalog <ArrowRight size={16} /></Link>
-              <Link to="/admin" className="btn btn-ghost btn-lg">Admin panel</Link>
+              <Link to="/shop?category=software" className="btn btn-ghost btn-lg">Explore software</Link>
             </div>
             <div className="hero-stats">
               <div className="hero-stat"><strong>{products.length}</strong><span>Live products</span></div>
@@ -96,8 +96,7 @@ export default function Home() {
                 add your first digital or physical product and it will appear here instantly.
               </p>
               <div style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
-                <Link to="/admin" className="btn btn-primary btn-lg">Open admin panel <ArrowRight size={16} /></Link>
-                <Link to="/shop" className="btn btn-ghost btn-lg">Try the storefront</Link>
+                <Link to="/shop" className="btn btn-primary btn-lg">Explore products <ArrowRight size={16} /></Link>
               </div>
             </div>
           </div>
