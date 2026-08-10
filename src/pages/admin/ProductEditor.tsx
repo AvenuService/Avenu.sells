@@ -418,8 +418,10 @@ export default function ProductEditor() {
               <button type="button" className="btn btn-ghost btn-sm" onClick={copyStoreLink}>
                 <CopyIcon size={14} /> Copy storefront URL
               </button>
-              <button type="submit" className="btn btn-primary btn-lg btn-block">
-                <CheckIcon size={16} /> {editing ? "Save changes" : "Create product"}
+              <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={saving}>
+                {saving
+                  ? (editing ? "Saving…" : "Creating…")
+                  : (<><CheckIcon size={16} /> {editing ? "Save changes" : "Create product"}</>)}
               </button>
               <Link to="/admin/products" className="ae-cancel">← Cancel & back to products</Link>
             </div>
