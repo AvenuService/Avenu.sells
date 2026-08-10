@@ -4,6 +4,7 @@ import App from "./App";
 import { CatalogProvider } from "./store/CatalogContext";
 import { CartProvider } from "./store/CartContext";
 import { AdminAuthProvider } from "./store/AdminAuthContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import "./styles/global.css";
 import "./styles/layout.css";
 import "./styles/pages.css";
@@ -11,12 +12,14 @@ import "./styles/admin.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <CatalogProvider>
-      <CartProvider>
-        <AdminAuthProvider>
-          <App />
-        </AdminAuthProvider>
-      </CartProvider>
-    </CatalogProvider>
+    <ErrorBoundary>
+      <CatalogProvider>
+        <CartProvider>
+          <AdminAuthProvider>
+            <App />
+          </AdminAuthProvider>
+        </CartProvider>
+      </CatalogProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
