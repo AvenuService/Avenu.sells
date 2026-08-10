@@ -41,6 +41,14 @@ export const categories = [
 
 export type CategorySlug = (typeof categories)[number]["slug"];
 
+const PALETTE: [string, string][] = [
+  ["#1f4f8a", "#0a3568"],
+  ["#0a3568", "#021024"],
+  ["#3a6aa0", "#052659"],
+  ["#7DA0CA", "#5483B3"],
+  ["#C1E8FF", "#5483B3"],
+];
+
 // The catalog starts empty — you populate it from the /admin dashboard.
 // Products are persisted in localStorage by CatalogProvider (see src/store/CatalogContext.tsx).
 //
@@ -51,13 +59,6 @@ export type CategorySlug = (typeof categories)[number]["slug"];
 // NOTE: PALETTE + pickGradient MUST be declared above initialProducts, because
 // initialProducts calls pickGradient at module init. Putting them below produces
 // a "Cannot access X before initialization" TDZ error in the minified bundle.
-const PALETTE: [string, string][] = [
-  ["#1f4f8a", "#0a3568"],
-  ["#0a3568", "#021024"],
-  ["#3a6aa0", "#052659"],
-  ["#7DA0CA", "#5483B3"],
-  ["#C1E8FF", "#5483B3"],
-];
 export function pickGradient(seed = "") {
   let n = 0;
   for (let i = 0; i < seed.length; i++) n = (n * 31 + seed.charCodeAt(i)) >>> 0;
@@ -205,4 +206,17 @@ export function generateComplexCode(blocks = 4, blockLen = 5) {
     parts.push(s);
   }
   return parts.join("-");
+}
+
+const PALETTE: [string, string][] = [
+  ["#1f4f8a", "#0a3568"],
+  ["#0a3568", "#021024"],
+  ["#3a6aa0", "#052659"],
+  ["#7DA0CA", "#5483B3"],
+  ["#C1E8FF", "#5483B3"],
+];
+export function pickGradient(seed = "") {
+  let n = 0;
+  for (let i = 0; i < seed.length; i++) n = (n * 31 + seed.charCodeAt(i)) >>> 0;
+  return PALETTE[n % PALETTE.length];
 }
