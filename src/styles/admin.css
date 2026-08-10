@@ -139,6 +139,8 @@
 .type-digital { background: rgba(193, 232, 255, 0.10); color: var(--accent-ice); border-color: rgba(193, 232, 255, 0.22); }
 .type-digital svg { color: var(--accent-ice); }
 .type-physical { background: rgba(125, 160, 202, 0.10); color: var(--accent-soft); }
+.type-service { background: rgba(193, 232, 255, 0.08); color: var(--accent-ice); border-color: rgba(193, 232, 255, 0.18); }
+.type-service svg { color: var(--accent-ice); }
 
 .apt-actions { display: flex; gap: 0.25rem; justify-content: flex-end; white-space: nowrap; }
 .apt-edit, .apt-trash { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--accent-soft); transition: all var(--t-fast); }

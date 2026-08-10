@@ -16,7 +16,7 @@ import {
   type ProductRow,
 } from "./supabaseTypes";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import type { Product } from "../data/products";
+import { initialProducts, type Product } from "../data/products";
 
 type CatalogStatus = "loading" | "ready" | "error";
 
@@ -46,7 +46,12 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [status, setStatus] = useState<CatalogStatus>(supabaseConfigured ? "loading" : "ready");
   const [error, setError] = useState<string | null>(null);
-  const [fallback, setFallback] = useLocalStorage<Product[]>(FALLBACK_KEY, []);
+  const [fallback, setFallback] = useLocalStorage<Product[]>(
+    FALLBACK_KEY,
+    // Seed the fallback catalog with the website-as-a-service tiers so the
+    // storefront has products to show before Supabase is configured.
+    initialProducts,
+  );
   const subStarted = useRef(false);
 
   const loadFromSupabase = useCallback(async () => {

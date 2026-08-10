@@ -10,6 +10,7 @@ import {
   StarFilledIcon,
   ArrowRight,
   EditIcon,
+  GlobeIcon,
 } from "../../components/Icons";
 import { supabaseConfigured } from "../../store/supabaseClient";
 
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
 
   const digitalCount = products.filter((p) => p.type === "digital").length;
   const physicalCount = products.filter((p) => p.type === "physical").length;
+  const serviceCount = products.filter((p) => p.type === "service").length;
   const featuredCount = products.filter((p) => p.featured).length;
   const inventoryValue = products.reduce((s, p) => s + p.price * Math.max(0, p.stock), 0);
   const avgRating = products.length
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
     { label: "Total products", value: products.length, hint: "in catalog", icon: BoxIcon },
     { label: "Digital products", value: digitalCount, hint: "downloadable", icon: DigitalIcon },
     { label: "Physical products", value: physicalCount, hint: "shippable", icon: BoxIcon },
+    { label: "Services", value: serviceCount, hint: "custom builds", icon: GlobeIcon },
     { label: "Featured", value: featuredCount, hint: "highlighted", icon: StarFilledIcon },
     { label: "Avg rating", value: avgRating ? avgRating.toFixed(2) : "—", hint: "across catalog", icon: StarFilledIcon },
     { label: "Inventory value", value: formatPrice(inventoryValue), hint: "stock × price", icon: BoxIcon },
@@ -104,7 +107,9 @@ export default function AdminDashboard() {
                 </div>
                 <div className="admin-recent-info">
                   <div className="admin-recent-top">
-                    <span className="badge">{p.type === "digital" ? "Digital" : "Physical"}</span>
+                    <span className="badge">
+                      {p.type === "digital" ? "Digital" : p.type === "physical" ? "Physical" : "Service"}
+                    </span>
                     <span className="muted" style={{ textTransform: "capitalize" }}>{p.category}</span>
                   </div>
                   <Link to={`/admin/products/${p.id}`} className="admin-recent-name">{p.name}</Link>

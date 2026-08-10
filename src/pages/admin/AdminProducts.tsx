@@ -11,6 +11,7 @@ import {
   StarFilledIcon,
   DigitalIcon,
   BoxIcon,
+  GlobeIcon,
 } from "../../components/Icons";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
@@ -21,7 +22,7 @@ export default function AdminProducts() {
   useEffect(() => { void refresh(); }, [refresh]);
 
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "digital" | "physical" | "featured">("all");
+  const [filter, setFilter] = useState<"all" | "digital" | "physical" | "service" | "featured">("all");
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
 
@@ -29,6 +30,7 @@ export default function AdminProducts() {
     let list = products.slice();
     if (filter === "digital") list = list.filter((p) => p.type === "digital");
     if (filter === "physical") list = list.filter((p) => p.type === "physical");
+    if (filter === "service") list = list.filter((p) => p.type === "service");
     if (filter === "featured") list = list.filter((p) => p.featured);
     if (query.trim()) {
       const q = query.trim().toLowerCase();
@@ -49,16 +51,18 @@ export default function AdminProducts() {
           <input className="aps-search" placeholder="Search products…" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <div className="admin-filter-chips">
-          {(["all", "digital", "physical", "featured"] as const).map((f) => (
+          {(["all", "digital", "physical", "service", "featured"] as const).map((f) => (
             <button key={f} className={`af-chip ${filter === f ? "active" : ""}`} onClick={() => setFilter(f)}>
               {f === "all" && "All"}
               {f === "digital" && <><DigitalIcon size={13} /> Digital</>}
               {f === "physical" && <><BoxIcon size={13} /> Physical</>}
+              {f === "service" && <><GlobeIcon size={13} /> Service</>}
               {f === "featured" && <><StarFilledIcon size={13} /> Featured</>}
               <span className="af-count">
                 {f === "all" ? products.length
                   : f === "digital" ? products.filter((p) => p.type === "digital").length
                   : f === "physical" ? products.filter((p) => p.type === "physical").length
+                  : f === "service" ? products.filter((p) => p.type === "service").length
                   : products.filter((p) => p.featured).length}
               </span>
             </button>
@@ -113,7 +117,9 @@ export default function AdminProducts() {
                   </td>
                   <td>
                     <span className={`type-pill type-${p.type}`}>
-                      {p.type === "digital" ? <DigitalIcon size={12} /> : <BoxIcon size={12} />}
+                      {p.type === "digital" ? <DigitalIcon size={12} />
+                        : p.type === "physical" ? <BoxIcon size={12} />
+                        : <GlobeIcon size={12} />}
                       {p.type}
                     </span>
                   </td>
@@ -123,7 +129,7 @@ export default function AdminProducts() {
                     <strong>{formatPrice(p.price)}</strong>
                     {p.oldPrice && <span className="apt-old muted"> · {formatPrice(p.oldPrice)}</span>}
                   </td>
-                  <td>{p.type === "digital" ? <span className="muted">∞</span> : p.stock}</td>
+                  <td>{p.type === "digital" || p.type === "service" ? <span className="muted">∞</span> : p.stock}</td>
                   <td>
                     <div className="apt-badges">
                       {p.featured && <span className="badge badge-ice">featured</span>}

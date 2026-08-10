@@ -13,12 +13,12 @@ const valueProps = [
 ];
 
 const cats = [
-  { slug: "audio", name: "Audio", idx: "01" },
-  { slug: "wearables", name: "Wearables", idx: "02" },
-  { slug: "computing", name: "Computing", idx: "03" },
-  { slug: "apparel", name: "Apparel", idx: "04" },
-  { slug: "home", name: "Home", idx: "05" },
-  { slug: "software", name: "Software", idx: "06" },
+  { slug: "websites", name: "Websites", idx: "01" },
+  { slug: "audio", name: "Audio", idx: "02" },
+  { slug: "wearables", name: "Wearables", idx: "03" },
+  { slug: "computing", name: "Computing", idx: "04" },
+  { slug: "apparel", name: "Apparel", idx: "05" },
+  { slug: "home", name: "Home", idx: "06" },
 ];
 
 export default function Home() {

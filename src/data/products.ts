@@ -1,4 +1,4 @@
-export type ProductType = "digital" | "physical";
+export type ProductType = "digital" | "physical" | "service";
 
 export type Product = {
   id: string;
@@ -32,6 +32,7 @@ export const categories = [
   { slug: "computing", name: "Computing", blurb: "Precision machines for makers" },
   { slug: "apparel", name: "Apparel", blurb: "Minimal essentials for everyday" },
   { slug: "home", name: "Home", blurb: "Objects that elevate your space" },
+  { slug: "websites", name: "Websites", blurb: "Custom websites built for you" },
   { slug: "software", name: "Software", blurb: "Digital downloads & keys" },
   { slug: "presets", name: "Presets", blurb: "Color, audio & design presets" },
   { slug: "templates", name: "Templates", blurb: "Notion, Figma & web templates" },
@@ -42,7 +43,96 @@ export type CategorySlug = (typeof categories)[number]["slug"];
 
 // The catalog starts empty — you populate it from the /admin dashboard.
 // Products are persisted in localStorage by CatalogProvider (see src/store/CatalogContext.tsx).
-export const initialProducts: Product[] = [];
+//
+// Website-as-a-service tiers are seeded by default so the storefront has
+// something to sell out of the box. They also ship in the Supabase migration
+// (supabase/seed_website_services.sql) for the live database.
+const SEED_BASE = Date.UTC(2026, 7, 1); // Aug 1, 2026
+
+export const initialProducts: Product[] = [
+  {
+    id: "seed_website_starter",
+    slug: "website-starter",
+    name: "Starter Website",
+    brand: "Avenu Studio",
+    category: "websites",
+    type: "service",
+    price: 499,
+    rating: 5,
+    reviews: 0,
+    tagline: "A polished one-page site to launch your presence.",
+    description:
+      "A hand-built, responsive one-page website designed to make you look essential from day one. Perfect for freelancers, small brands, and product launches.",
+    features: [
+      "1-page responsive frontend",
+      "Contact form wired up",
+      "Mobile-first design",
+      "Basic SEO meta tags",
+      "Deploy + handoff",
+    ],
+    colors: [{ name: "Midnight", hex: "#021024" }],
+    stock: 999,
+    featured: true,
+    bestseller: false,
+    gradient: pickGradient("website-starter"),
+    createdAt: SEED_BASE,
+  },
+  {
+    id: "seed_website_business",
+    slug: "website-business",
+    name: "Business Website",
+    brand: "Avenu Studio",
+    category: "websites",
+    type: "service",
+    price: 1499,
+    rating: 5,
+    reviews: 0,
+    tagline: "A multi-page site with a CMS, built to grow.",
+    description:
+      "Up to five pages with a content management system so you can publish updates yourself. Includes SEO foundations and newsletter capture.",
+    features: [
+      "Up to 5 pages",
+      "CMS / blogging built in",
+      "SEO basics + sitemap",
+      "Newsletter signup",
+      "Contact form",
+      "Deploy + 14 days support",
+    ],
+    colors: [{ name: "Midnight", hex: "#021024" }],
+    stock: 999,
+    featured: true,
+    bestseller: false,
+    gradient: pickGradient("website-business"),
+    createdAt: SEED_BASE + 86_400_000,
+  },
+  {
+    id: "seed_website_premium",
+    slug: "website-premium",
+    name: "Premium Website",
+    brand: "Avenu Studio",
+    category: "websites",
+    type: "service",
+    price: 3999,
+    rating: 5,
+    reviews: 0,
+    tagline: "A fully custom build with backend, admin, and launch support.",
+    description:
+      "A bespoke website with a real backend — authentication, database, and an admin panel to manage your content. Designed, built, deployed, and supported for 30 days.",
+    features: [
+      "Custom design & build",
+      "Full backend (auth + database)",
+      "Admin panel included",
+      "Custom integrations",
+      "Deploy + 30 days support",
+    ],
+    colors: [{ name: "Midnight", hex: "#021024" }],
+    stock: 999,
+    featured: true,
+    bestseller: false,
+    gradient: pickGradient("website-premium"),
+    createdAt: SEED_BASE + 2 * 86_400_000,
+  },
+];
 
 export function getProductBySlug(products: Product[], slug: string) {
   return products.find((p) => p.slug === slug);

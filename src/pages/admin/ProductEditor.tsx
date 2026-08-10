@@ -17,6 +17,7 @@ import {
   CheckIcon,
   DigitalIcon,
   BoxIcon,
+  GlobeIcon,
 } from "../../components/Icons";
 
 type Draft = Omit<Product, "id" | "createdAt"> & { id?: string };
@@ -138,7 +139,7 @@ export default function ProductEditor() {
       colors: cleanColors.length ? cleanColors : [{ name: "Avenu", hex: "#021024" }],
       gradient: draft.imageBanner ? draft.gradient : pickGradient(draft.name),
       type: draft.type,
-      stock: draft.type === "digital" ? 999 : Math.max(0, Math.round(draft.stock)),
+      stock: draft.type === "digital" || draft.type === "service" ? 999 : Math.max(0, Math.round(draft.stock)),
     };
 
     setSaving(true);
@@ -177,7 +178,7 @@ export default function ProductEditor() {
   return (
     <AdminLayout
       title={editing ? "Edit product" : "Add a new product"}
-      subtitle={editing ? "Refine the details of this catalog item." : "Build a new entry for the storefront — digital or physical."}
+      subtitle={editing ? "Refine the details of this catalog item." : "Build a new entry for the storefront — digital, physical, or service."}
     >
       <form onSubmit={onSubmit} className="admin-editor">
         <div className="admin-editor-main">
@@ -188,13 +189,21 @@ export default function ProductEditor() {
           <fieldset className="admin-fieldset card">
             <legend className="admin-legend">Type & category</legend>
             <div className="ae-type-row">
-              {(["digital", "physical"] as const).map((t) => (
+              {(["digital", "physical", "service"] as const).map((t) => (
                 <label key={t} className={`ae-type-card ${draft.type === t ? "active" : ""}`}>
                   <input type="radio" name="type" value={t} checked={draft.type === t} onChange={() => patch("type", t as ProductType)} />
-                  <span className="ae-type-icon">{t === "digital" ? <DigitalIcon size={20} /> : <BoxIcon size={20} />}</span>
+                  <span className="ae-type-icon">
+                    {t === "digital" ? <DigitalIcon size={20} />
+                      : t === "physical" ? <BoxIcon size={20} />
+                      : <GlobeIcon size={20} />}
+                  </span>
                   <span className="ae-type-text">
-                    <strong>{t === "digital" ? "Digital" : "Physical"}</strong>
-                    <span className="muted">{t === "digital" ? "Downloadable · no shipping" : "Shippable · needs inventory"}</span>
+                    <strong>{t === "digital" ? "Digital" : t === "physical" ? "Physical" : "Service"}</strong>
+                    <span className="muted">
+                      {t === "digital" ? "Downloadable · no shipping"
+                        : t === "physical" ? "Shippable · needs inventory"
+                        : "Custom build · you deliver"}
+                    </span>
                   </span>
                 </label>
               ))}
@@ -289,17 +298,17 @@ export default function ProductEditor() {
             <legend className="admin-legend">Inventory & rating</legend>
             <div className="form-grid">
               <div className="form-group">
-                <label htmlFor="stock">{draft.type === "digital" ? "Stock (kept as ∞ for digital)" : "Stock"}</label>
+                <label htmlFor="stock">{draft.type === "digital" || draft.type === "service" ? "Stock (kept as ∞)" : "Stock"}</label>
                 <input
                   id="stock"
                   type="number"
                   min="0"
                   className="field"
                   value={draft.stock}
-                  disabled={draft.type === "digital"}
+                  disabled={draft.type === "digital" || draft.type === "service"}
                   onChange={(e) => patch("stock", Number(e.target.value))}
                 />
-                {draft.type === "digital" && <small className="field-hint">Digital products always show as in stock.</small>}
+                {(draft.type === "digital" || draft.type === "service") && <small className="field-hint">Digital & service products always show as in stock.</small>}
               </div>
               <div className="form-group">
                 <label htmlFor="rating">Rating (0–5) — for storefront display</label>
@@ -376,7 +385,7 @@ export default function ProductEditor() {
               <div className="ae-preview-body">
                 <div className="ae-preview-meta">
                   <span style={{ textTransform: "capitalize" }}>{draft.category}</span>
-                  <span>{draft.type === "digital" ? "Digital" : "Physical"}</span>
+                  <span>{draft.type === "digital" ? "Digital" : draft.type === "physical" ? "Physical" : "Service"}</span>
                 </div>
                 <strong className="ae-preview-name">{draft.name || "Your product name"}</strong>
                 <span className="muted ae-preview-tagline">{draft.tagline || "Tagline appears here"}</span>

@@ -94,3 +94,6 @@ export const DigitalIcon = ({ size, ...rest }: IconProps) => (
 export const BoxIcon = ({ size, ...rest }: IconProps) => (
   <svg {...base(size, rest)}><path d="M12 3 21 8v8l-9 5-9-5V8l9-5Z" /><path d="M3 8l9 5 9-5M12 13v8" /></svg>
 );
+export const GlobeIcon = ({ size, ...rest }: IconProps) => (
+  <svg {...base(size, rest)}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" /></svg>
+);

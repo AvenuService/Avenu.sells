@@ -20,7 +20,7 @@ export type CartItem = {
   imageSlug: string;
   imageBanner?: string;
   gradient: [string, string];
-  type: "digital" | "physical";
+  type: "digital" | "physical" | "service";
 };
 
 type CartContextValue = {

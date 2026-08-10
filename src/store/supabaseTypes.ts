@@ -7,7 +7,7 @@ export type ProductRow = {
   name: string;
   brand: string;
   category: string;
-  type: "digital" | "physical";
+  type: "digital" | "physical" | "service";
   price: number;
   old_price: number | null;
   discount: number | null;
@@ -58,7 +58,7 @@ export type ProductInsert = {
   name: string;
   brand: string;
   category: string;
-  type: "digital" | "physical";
+  type: "digital" | "physical" | "service";
   price: number;
   old_price: number | null;
   discount: number | null;
