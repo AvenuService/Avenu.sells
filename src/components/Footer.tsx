@@ -73,7 +73,7 @@ export default function Footer() {
         <hr className="divider" />
 
         <div className="footer-bottom">
-          <p className="muted">© {new Date().getFullYear()} Avenu, Inc. — avenu.sale</p>
+          <p className="muted">© {new Date().getFullYear()} Avenu, Inc. — avenu.sale · <a href="mailto:contact@avenu.sale" style={{ color: "var(--accent-ice)" }}>contact@avenu.sale</a></p>
           <div className="footer-legal">
             <Link to="/">Privacy</Link>
             <Link to="/">Terms</Link>
