@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "./AdminLayout";
 import { useCatalog } from "../../store/CatalogContext";
@@ -10,9 +11,13 @@ import {
   ArrowRight,
   EditIcon,
 } from "../../components/Icons";
+import { supabaseConfigured } from "../../store/supabaseClient";
 
 export default function AdminDashboard() {
-  const { products } = useCatalog();
+  const { products, status, refresh } = useCatalog();
+
+  // Pull the latest from Supabase when the dashboard mounts
+  useEffect(() => { void refresh(); }, [refresh]);
 
   const digitalCount = products.filter((p) => p.type === "digital").length;
   const physicalCount = products.filter((p) => p.type === "physical").length;
@@ -35,6 +40,26 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout title="Dashboard" subtitle="A snapshot of your live catalog.">
+      {!supabaseConfigured && (
+        <div className="admin-config-warn card">
+          <div className="acw-icon">⚠</div>
+          <div>
+            <strong>Supabase not configured — products only save locally to this browser.</strong>
+            <p className="muted">
+              Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to
+              <code>.env.local</code> (see README) so products sync worldwide. While unconfigured,
+              products added here only show in this browser.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {status === "loading" && (
+        <div className="admin-sync">
+          <span className="spinner" /> <span className="muted">Syncing catalog from Supabase…</span>
+        </div>
+      )}
+
       <div className="admin-stats-grid stagger">
         {stats.map((s) => (
           <div className="card admin-stat" key={s.label}>

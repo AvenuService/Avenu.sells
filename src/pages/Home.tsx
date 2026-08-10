@@ -20,10 +20,11 @@ const cats = [
 ];
 
 export default function Home() {
-  const { products } = useCatalog();
+  const { products, status, error } = useCatalog();
   const featured = products.filter((p) => p.featured).slice(0, 4);
   const bestsellers = products.filter((p) => p.bestseller).slice(0, 4);
-  const empty = products.length === 0;
+  const empty = products.length === 0 && status !== "loading";
+  const loading = status === "loading";
 
   return (
     <>

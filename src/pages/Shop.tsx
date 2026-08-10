@@ -4,6 +4,7 @@ import { useCatalog } from "../store/CatalogContext";
 import { categories, formatPrice, type Product } from "../data/products";
 import ProductCard from "../components/ProductCard";
 import { FilterIcon, CloseIcon } from "../components/Icons";
+import { LoadingGrid } from "../components/Loading";
 
 const sortOptions = [
   { value: "featured", label: "Featured" },
@@ -19,7 +20,7 @@ type SortValue = (typeof sortOptions)[number]["value"];
 const CATALOG_CATEGORIES = categories.filter((c) => c.slug !== "all");
 
 export default function Shop() {
-  const { products } = useCatalog();
+  const { products, status, error } = useCatalog();
   const [params, setParams] = useSearchParams();
 
   const category = params.get("category") ?? "all";
@@ -222,7 +223,18 @@ export default function Shop() {
             </div>
           )}
 
-          {products.length === 0 ? (
+          {status === "loading" ? (
+            <LoadingGrid />
+          ) : error ? (
+            <div className="shop-empty">
+              <div className="admin-empty-glyph" style={{ margin: "0 auto 1rem" }}>⚠</div>
+              <h3>Could not load the catalog</h3>
+              <p className="muted">{error}</p>
+              <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+                Tip: check that your Supabase URL + anon key are set in <code>.env.local</code> and the <code>products</code> table exists.
+              </p>
+            </div>
+          ) : products.length === 0 ? (
             <div className="shop-empty">
               <div className="admin-empty-glyph" style={{ margin: "0 auto 1rem" }}>∅</div>
               <h3>The catalog is empty</h3>

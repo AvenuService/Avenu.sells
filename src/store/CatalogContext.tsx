@@ -2,34 +2,109 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
+  useState,
   type ReactNode,
 } from "react";
-import { useLocalStorage } from "../hooks/useLocalStorage";
+import { assertSupabase, supabaseConfigured } from "./supabaseClient";
 import {
-  initialProducts,
-  generateId,
-  slugify,
-  type Product,
-} from "../data/products";
+  productToInsert,
+  productToUpdate,
+  rowToProduct,
+  type ProductRow,
+} from "./supabaseTypes";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import type { Product } from "../data/products";
+
+type CatalogStatus = "loading" | "ready" | "error";
 
 type CatalogContextValue = {
   products: Product[];
+  status: CatalogStatus;
+  error: string | null;
+  // lookups still synchronously search the in-memory list
   productBySlug: (slug: string) => Product | undefined;
   productById: (id: string) => Product | undefined;
   related: (slug: string, limit?: number) => Product[];
-  createProduct: (data: Omit<Product, "id" | "createdAt">) => Product;
-  updateProduct: (id: string, patch: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  clearAll: () => void;
-  importProducts: (items: Product[]) => void;
+  // mutations: these write to Supabase; local list updates on success + realtime
+  createProduct: (data: Omit<Product, "id" | "createdAt">) => Promise<Product | null>;
+  updateProduct: (id: string, patch: Partial<Product>) => Promise<boolean>;
+  deleteProduct: (id: string) => Promise<boolean>;
+  refresh: () => Promise<void>;
 };
 
 const CatalogContext = createContext<CatalogContextValue | null>(null);
-const STORAGE_KEY = "avenu.catalog.v2";
+const TABLE = "products";
+
+// Fallback in-memory catalog when Supabase isn't configured yet
+// (lets the storefront still render during setup / offline dev).
+const FALLBACK_KEY = "avenu.catalog.v2";
 
 export function CatalogProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useLocalStorage<Product[]>(STORAGE_KEY, initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [status, setStatus] = useState<CatalogStatus>(supabaseConfigured ? "loading" : "ready");
+  const [error, setError] = useState<string | null>(null);
+  const [fallback, setFallback] = useLocalStorage<Product[]>(FALLBACK_KEY, []);
+  const subStarted = useRef(false);
+
+  const loadFromSupabase = useCallback(async () => {
+    if (!supabaseConfigured) {
+      setProducts(fallback);
+      setStatus("ready");
+      return;
+    }
+    try {
+      const sb = assertSupabase();
+      const { data, error: err } = await sb
+        .from(TABLE)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (err) throw err;
+      setProducts((data as unknown as ProductRow[]).map(rowToProduct));
+      setStatus("ready");
+      setError(null);
+    } catch (e) {
+      setStatus("error");
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }, [fallback]);
+
+  // Initial mount: load + subscribe to realtime
+  useEffect(() => {
+    void loadFromSupabase();
+    if (!supabaseConfigured || subStarted.current) return;
+    subStarted.current = true;
+    try {
+      const sb = assertSupabase();
+      const channel = sb
+        .channel("public:products")
+        .on("postgres_changes", { event: "*", schema: "public", table: TABLE }, (payload) => {
+          const row = payload.new as ProductRow;
+          if (!row) return;
+          setProducts((prev) => {
+            if (payload.eventType === "DELETE") {
+              const oldId = (payload.old as ProductRow)?.id;
+              return prev.filter((p) => p.id !== oldId);
+            }
+            const next = rowToProduct(row);
+            const idx = prev.findIndex((p) => p.id === next.id);
+            if (idx === -1) return [next, ...prev];
+            const copy = [...prev];
+            copy[idx] = next;
+            return copy;
+          });
+        })
+        .subscribe();
+      return () => {
+        sb.removeChannel(channel);
+        subStarted.current = false;
+      };
+    } catch {
+      /* ignore subscription failures during setup */
+    }
+  }, [loadFromSupabase]);
 
   const productBySlug = useCallback(
     (slug: string) => products.find((p) => p.slug === slug),
@@ -52,56 +127,100 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   );
 
   const createProduct = useCallback<CatalogContextValue["createProduct"]>(
-    (data) => {
-      const product: Product = {
-        ...data,
-        id: generateId(),
-        slug: data.slug ? slugify(data.slug) : slugify(data.name),
-        createdAt: Date.now(),
-      };
-      setProducts((prev) => [product, ...prev]);
-      return product;
+    async (data) => {
+      if (!supabaseConfigured) {
+        // fallback local save (won't sync worldwide)
+        const p: Product = {
+          ...data,
+          id: "local_" + Math.random().toString(36).slice(2, 10),
+          createdAt: Date.now(),
+        };
+        setFallback((prev) => [p, ...prev]);
+        setProducts((prev) => [p, ...prev]);
+        return p;
+      }
+      try {
+        const sb = assertSupabase();
+        const insert = productToInsert(data);
+        const { data: row, error: err } = await sb
+          .from(TABLE)
+          .insert(insert)
+          .select("*")
+          .single();
+        if (err) throw err;
+        const product = rowToProduct(row as unknown as ProductRow);
+        // optimistic: pre-add so UI updates immediately (realtime will reconcile if needed)
+        setProducts((prev) => [product, ...prev.filter((p) => p.id !== product.id)]);
+        return product;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+        return null;
+      }
     },
-    [setProducts],
+    [setFallback],
   );
 
   const updateProduct = useCallback<CatalogContextValue["updateProduct"]>(
-    (id, patch) => {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === id
-            ? { ...p, ...patch, slug: patch.slug ? slugify(patch.slug) : p.slug }
-            : p,
-        ),
-      );
+    async (id, patch) => {
+      if (!supabaseConfigured) {
+        setFallback((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+        setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+        return true;
+      }
+      try {
+        const sb = assertSupabase();
+        const upd = productToUpdate(patch);
+        const { error: err } = await sb.from(TABLE).update(upd).eq("id", id);
+        if (err) throw err;
+        setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+        return false;
+      }
     },
-    [setProducts],
+    [setFallback],
   );
 
-  const deleteProduct = useCallback(
-    (id: string) => setProducts((prev) => prev.filter((p) => p.id !== id)),
-    [setProducts],
+  const deleteProduct = useCallback<CatalogContextValue["deleteProduct"]>(
+    async (id) => {
+      if (!supabaseConfigured) {
+        setFallback((prev) => prev.filter((p) => p.id !== id));
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        return true;
+      }
+      try {
+        const sb = assertSupabase();
+        const { error: err } = await sb.from(TABLE).delete().eq("id", id);
+        if (err) throw err;
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+        return false;
+      }
+    },
+    [setFallback],
   );
 
-  const clearAll = useCallback(() => setProducts([]), [setProducts]);
-  const importProducts = useCallback(
-    (items: Product[]) => setProducts(items),
-    [setProducts],
-  );
+  const refresh = useCallback(async () => {
+    await loadFromSupabase();
+  }, [loadFromSupabase]);
 
   const value = useMemo<CatalogContextValue>(
     () => ({
       products,
+      status,
+      error,
       productBySlug,
       productById,
       related,
       createProduct,
       updateProduct,
       deleteProduct,
-      clearAll,
-      importProducts,
+      refresh,
     }),
-    [products, productBySlug, productById, related, createProduct, updateProduct, deleteProduct, clearAll, importProducts],
+    [products, status, error, productBySlug, productById, related, createProduct, updateProduct, deleteProduct, refresh],
   );
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;

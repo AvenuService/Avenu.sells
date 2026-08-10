@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AdminLayout from "./AdminLayout";
 import { useCatalog } from "../../store/CatalogContext";
@@ -15,8 +15,11 @@ import {
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function AdminProducts() {
-  const { products, deleteProduct, clearAll } = useCatalog();
+  const { products, status, deleteProduct, refresh } = useCatalog();
   const navigate = useNavigate();
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "digital" | "physical" | "featured">("all");
   const [confirmId, setConfirmId] = useState<string | null>(null);
