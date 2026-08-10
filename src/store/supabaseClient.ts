@@ -4,7 +4,13 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-const isConfigured = !!(url && anonKey && url.startsWith("https://") && anonKey.startsWith("eyJ"));
+const isConfigured = !!(
+  url &&
+  anonKey &&
+  url.startsWith("https://") &&
+  anonKey.length > 10 &&
+  !anonKey.includes("PASTE-YOUR-ANON-KEY")
+);
 
 export const supabase: SupabaseClient | null = isConfigured
   ? createClient(url as string, anonKey as string, {
