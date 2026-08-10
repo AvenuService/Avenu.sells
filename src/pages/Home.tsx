@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useCatalog } from "../store/CatalogContext";
 import ProductCard from "../components/ProductCard";
 import { LoadingGrid } from "../components/Loading";
+import Hero3DCanvas from "../components/Hero3DCanvas";
 import { ArrowRight, ShieldIcon, SwapIcon, SparkIcon, ZapIcon } from "../components/Icons";
 
 const valueProps = [
@@ -52,11 +53,8 @@ export default function Home() {
           </div>
 
           <div className="hero-visual" aria-hidden="true">
-            <div className="hv-blob b1" />
-            <div className="hv-blob b2" />
-            <div className="hv-glyph">A</div>
-            <div className="hv-orb" />
-            <div className="hv-chip"><span className="pip" /><strong>Instant delivery</strong> · digital first</div>
+            <Hero3DCanvas />
+            <div className="hv-chip" style={{ zIndex: 10 }}><span className="pip" /><strong>Instant delivery</strong> · digital first</div>
           </div>
         </div>
       </section>
