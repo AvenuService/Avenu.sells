@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import CartDrawer from "./components/CartDrawer";
@@ -19,7 +19,9 @@ import AdminLogin from "./pages/admin/AdminLogin";
 
 function ScrollToTopOnNav() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }); }, [pathname]);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [pathname]);
   return null;
 }
 
@@ -57,12 +59,11 @@ export default function App() {
           <Route path="/order/:id" element={<OrderConfirmation />} />
           <Route path="*" element={<NotFound />} />
         </Route>
-
-        <CartDrawer />
-        <AddedToast />
       </Routes>
+
+      {/* These render globally (cart drawer + toast can appear on admin too) */}
+      <CartDrawer />
+      <AddedToast />
     </BrowserRouter>
   );
 }
-
-void Navigate;
