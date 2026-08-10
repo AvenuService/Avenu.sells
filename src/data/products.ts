@@ -47,6 +47,23 @@ export type CategorySlug = (typeof categories)[number]["slug"];
 // Website-as-a-service tiers are seeded by default so the storefront has
 // something to sell out of the box. They also ship in the Supabase migration
 // (supabase/seed_website_services.sql) for the live database.
+//
+// NOTE: PALETTE + pickGradient MUST be declared above initialProducts, because
+// initialProducts calls pickGradient at module init. Putting them below produces
+// a "Cannot access X before initialization" TDZ error in the minified bundle.
+const PALETTE: [string, string][] = [
+  ["#1f4f8a", "#0a3568"],
+  ["#0a3568", "#021024"],
+  ["#3a6aa0", "#052659"],
+  ["#7DA0CA", "#5483B3"],
+  ["#C1E8FF", "#5483B3"],
+];
+export function pickGradient(seed = "") {
+  let n = 0;
+  for (let i = 0; i < seed.length; i++) n = (n * 31 + seed.charCodeAt(i)) >>> 0;
+  return PALETTE[n % PALETTE.length];
+}
+
 const SEED_BASE = Date.UTC(2026, 7, 1); // Aug 1, 2026
 
 export const initialProducts: Product[] = [
@@ -188,17 +205,4 @@ export function generateComplexCode(blocks = 4, blockLen = 5) {
     parts.push(s);
   }
   return parts.join("-");
-}
-
-const PALETTE: [string, string][] = [
-  ["#1f4f8a", "#0a3568"],
-  ["#0a3568", "#021024"],
-  ["#3a6aa0", "#052659"],
-  ["#7DA0CA", "#5483B3"],
-  ["#C1E8FF", "#5483B3"],
-];
-export function pickGradient(seed = "") {
-  let n = 0;
-  for (let i = 0; i < seed.length; i++) n = (n * 31 + seed.charCodeAt(i)) >>> 0;
-  return PALETTE[n % PALETTE.length];
 }
