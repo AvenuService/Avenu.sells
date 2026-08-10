@@ -1,8 +1,16 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// Loaded from .env.local in dev / Vercel env vars in production.
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// Loaded from .env.local in dev or Vercel's Supabase Integration env vars in production.
+const url =
+  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
+  (import.meta.env.SUPABASE_URL as string | undefined) ||
+  (import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined);
+
+const anonKey =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ||
+  (import.meta.env.SUPABASE_ANON_KEY as string | undefined) ||
+  (import.meta.env.SUPABASE_PUBLISHABLE_KEY as string | undefined) ||
+  (import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined);
 
 const isConfigured = !!(
   url &&
