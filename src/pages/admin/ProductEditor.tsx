@@ -56,6 +56,7 @@ export default function ProductEditor() {
   );
   const [slugError, setSlugError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // if editing and the route id changes, re-sync draft
   useEffect(() => {
@@ -120,7 +121,7 @@ export default function ProductEditor() {
     return true;
   }
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validate()) return;
 
@@ -138,17 +139,24 @@ export default function ProductEditor() {
       stock: draft.type === "digital" ? 999 : Math.max(0, Math.round(draft.stock)),
     };
 
-    if (editing && existing) {
-      updateProduct(existing.id, payload);
-    } else {
-      const created = createProduct(payload);
-      navigate(`/admin/products/${created.id}`, { replace: true });
+    setSaving(true);
+    try {
+      if (editing && existing) {
+        await updateProduct(existing.id, payload);
+      } else {
+        const created = await createProduct(payload);
+        if (created) {
+          navigate(`/admin/products/${created.id}`, { replace: true });
+          setSaved(true);
+          setTimeout(() => setSaved(false), 1600);
+        }
+        return; // navigate-on-success path don't also run the success flags below
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 1600);
-      return;
+    } finally {
+      setSaving(false);
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1600);
   }
 
   function copyStoreLink() {

@@ -15,7 +15,7 @@ import {
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function AdminProducts() {
-  const { products, status, deleteProduct, refresh } = useCatalog();
+  const { products, deleteProduct, refresh } = useCatalog();
   const navigate = useNavigate();
 
   useEffect(() => { void refresh(); }, [refresh]);
@@ -151,7 +151,7 @@ export default function AdminProducts() {
           confirmLabel="Delete product"
           danger
           onCancel={() => setConfirmId(null)}
-          onConfirm={() => { deleteProduct(productForConfirm.id); setConfirmId(null); }}
+          onConfirm={async () => { if (productForConfirm) await deleteProduct(productForConfirm.id); setConfirmId(null); }}
         />
       )}
       {confirmWipe && (
@@ -162,7 +162,10 @@ export default function AdminProducts() {
           confirmLabel="Wipe everything"
           danger
           onCancel={() => setConfirmWipe(false)}
-          onConfirm={() => { clearAll(); setConfirmWipe(false); }}
+          onConfirm={async () => {
+            await Promise.all(products.map((p) => deleteProduct(p.id)));
+            setConfirmWipe(false);
+          }}
         />
       )}
     </AdminLayout>
