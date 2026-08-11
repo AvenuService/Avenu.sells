@@ -25,11 +25,11 @@ const cols = [
   {
     title: "Support",
     links: [
-      { to: "/contact", label: "Help Center" },
-      { to: "/contact", label: "Shipping" },
-      { to: "/contact", label: "Returns" },
-      { to: "/contact", label: "Track an Order" },
-      { to: "/contact", label: "Warranty" },
+      { to: "/", label: "Help Center" },
+      { to: "/", label: "Shipping" },
+      { to: "/", label: "Returns" },
+      { to: "/", label: "Track an Order" },
+      { to: "/", label: "Warranty" },
     ],
   },
 ];

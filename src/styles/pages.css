@@ -1,5 +1,5 @@
-/* ============================================================
-   Avenu — Page styles: Home, Shop, Product, Cart, Checkout
+﻿/* ============================================================
+   Avenu â€” Page styles: Home, Shop, Product, Cart, Checkout
    ============================================================ */
 
 /* ============================================================
@@ -18,7 +18,7 @@
 .hero-stat strong { font-family: var(--font-display); font-size: 1.6rem; color: var(--accent-ice); display: block; line-height: 1; }
 .hero-stat span { font-size: 0.85rem; color: var(--text-muted); }
 
-/* Hero visual — abstract product collage */
+/* Hero visual â€” abstract product collage */
 .hero-visual { position: relative; height: clamp(380px, 52vw, 540px); }
 .hv-blob { position: absolute; border-radius: 38px; filter: blur(2px); box-shadow: var(--shadow-card); }
 .hv-blob.b1 { inset: 0 12% 12% 0; background: linear-gradient(135deg, var(--accent-ice) 0%, var(--accent-soft) 40%, var(--bg-secondary) 100%); animation: float 7s ease-in-out infinite; }
@@ -228,7 +228,7 @@
 .step.active { color: var(--text-primary); }
 .step.active .step-num { background: var(--accent-ice); color: #021024; border-color: var(--accent-ice); }
 .step.done .step-num { background: rgba(193, 232, 255, 0.16); color: var(--accent-ice); border-color: var(--accent-ice); }
-.step.done .step-num::after { content: "✓"; position: absolute; }
+.step.done .step-num::after { content: "âœ“"; position: absolute; }
 .step-connector { flex: 1; height: 1px; background: var(--border-faint); align-self: center; min-width: 20px; }
 
 .checkout-section { padding: 1.6rem; background: rgba(5, 38, 89, 0.45); border: 1px solid var(--border-faint); border-radius: var(--radius-md); margin-bottom: 1.2rem; }
@@ -354,27 +354,3 @@
 .legal-content section:first-of-type { border-top: none; padding-top: 0; }
 .legal-content a { color: var(--accent-ice); text-decoration: underline; text-underline-offset: 2px; }
 .legal-content a:hover { color: var(--accent-soft); }
-
-
-/* ============================================================
-   CONTACT PAGE
-   ============================================================ */
-.contact-grid { display: grid; grid-template-columns: 1fr 340px; gap: 2.5rem; align-items: start; }
-.contact-form { padding: 1.6rem 1.4rem; }
-.contact-info { display: flex; flex-direction: column; gap: 1rem; }
-.contact-info-card { padding: 1.3rem 1.2rem; }
-.ci-item { display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.7rem 0; border-top: 1px solid var(--border-faint); }
-.ci-item:first-of-type { border-top: none; padding-top: 0; }
-.ci-ic { width: 38px; height: 38px; border-radius: var(--radius-md); background: rgba(193,232,255,0.10); border: 1px solid rgba(193,232,255,0.18); color: var(--accent-ice); display: grid; place-items: center; flex-shrink: 0; }
-.ci-item strong { display: block; color: var(--text-primary); font-size: 0.96rem; }
-.ci-item p { margin: 0.15rem 0 0.4rem; font-size: 0.86rem; }
-.ci-link { color: var(--accent-ice); font-size: 0.9rem; font-weight: 500; text-decoration: none; }
-.ci-link:hover { color: var(--accent-soft); text-decoration: underline; text-underline-offset: 2px; }
-
-.contact-alert { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.9rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.2rem; border: 1px solid; }
-.contact-alert-success { background: rgba(193,232,255,0.10); border-color: rgba(193,232,255,0.25); color: var(--accent-ice); }
-.contact-alert-error { background: rgba(255,180,180,0.08); border-color: rgba(255,180,180,0.25); color: #ffb4b4; }
-
-@media (max-width: 880px) {
-  .contact-grid { grid-template-columns: 1fr; }
-}
