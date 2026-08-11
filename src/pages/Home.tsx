@@ -1,9 +1,13 @@
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useCatalog } from "../store/CatalogContext";
 import ProductCard from "../components/ProductCard";
 import { LoadingGrid } from "../components/Loading";
-import Hero3DCanvas from "../components/Hero3DCanvas";
 import { ArrowRight, ShieldIcon, SwapIcon, SparkIcon, ZapIcon } from "../components/Icons";
+
+// Three.js scene is ~150KB gzipped — load it on demand so the rest of the
+// page (and the rest of the app) doesn't pay that cost on every navigation.
+const Scene3D = lazy(() => import("../components/Scene3D"));
 
 const valueProps = [
   { Icon: ZapIcon, title: "Instant digital delivery", text: "Software, presets, and keys unlock the moment you check out." },
@@ -29,10 +33,16 @@ export default function Home() {
   const loading = status === "loading";
   return (
     <>
+      {/* Fixed full-viewport 3D background — crystal + particles + scroll-driven camera */}
+      <Suspense fallback={null}>
+        <Scene3D />
+      </Suspense>
+
+      <div className="home-content">
       {/* HERO */}
-      <section className="hero">
+      <section className="hero hero-3d-host">
         <div className="container hero-grid">
-          <div className="hero-copy fade-up">
+          <div className="hero-copy fade-up hero-copy-card">
             <div className="hero-eyebrow"><span className="dot" /> {empty ? "Storefront initializing" : "Live catalog"}</div>
             <h1>Curated essentials.<br /><span className="ice">One icy palette.</span></h1>
             <p className="lead">
@@ -52,9 +62,10 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="hero-visual" aria-hidden="true">
-            <Hero3DCanvas />
-            <div className="hv-chip" style={{ zIndex: 10 }}><span className="pip" /><strong>Instant delivery</strong> · digital first</div>
+          <div className="hero-visual hero-visual-3d" aria-hidden="true">
+            {/* The 3D crystal lives in the fixed background layer; this slot is now a transparent
+                opening where it shines through. The hv-chip still labels the hero. */}
+            <div className="hv-chip" style={{ zIndex: 10 }}><span className="pip" /><strong>Live crystal</strong> · scroll to evolve</div>
           </div>
         </div>
       </section>
@@ -191,6 +202,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </div>
     </>
   );
 }

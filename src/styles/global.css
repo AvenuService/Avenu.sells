@@ -224,3 +224,43 @@ ul { list-style: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* ============================================================
+   HOME 3D BACKGROUND LAYER
+   ============================================================
+   .scene-3d-mount is a fixed full-viewport canvas (z-index: 0).
+   .home-content wraps every home-page section so it sits above
+   the 3D layer with z-index 1. The hero copy gets a translucent
+   card so the text is legible against the bright crystal.
+   */
+.home-content { position: relative; z-index: 1; }
+.scene-3d-mount { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.hero-3d-host { position: relative; z-index: 1; }
+.hero-copy-card {
+  background: linear-gradient(135deg, rgba(2, 16, 36, 0.78) 0%, rgba(5, 38, 89, 0.55) 60%, rgba(10, 53, 104, 0.30) 100%);
+  border: 1px solid rgba(193, 232, 255, 0.18);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 30px 80px -20px rgba(2, 16, 36, 0.7);
+}
+/* The right-side hero slot is now a transparent porthole — let the crystal show through */
+.hero-visual-3d {
+  background: transparent;
+  position: relative;
+}
+.hero-visual-3d .hv-chip { position: absolute; top: 22%; left: -24px; }
+/* Keep cards/sections readable when overlaid on the 3D scene. Slight lift + stronger bg. */
+.home-content .section { position: relative; z-index: 2; }
+.home-content .card,
+.home-content .cat-card,
+.home-content .value-card,
+.home-content .cta-band,
+.home-content .product-card,
+.home-content .marquee { position: relative; z-index: 2; }
+
+@media (max-width: 720px) {
+  .hero-copy-card { padding: 1.25rem; }
+}
