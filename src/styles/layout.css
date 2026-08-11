@@ -291,4 +291,20 @@
   .pc-title { font-size: 0.95rem; }
   .pc-price { font-size: 1.05rem; }
   .nav-inner { gap: 0.75rem; }
+  .cart-hint { display: none; }
+}
+
+
+/* ============================================================
+   FOOTER SOCIAL LINK
+   ============================================================ */
+.footer-social {
+  display: inline-grid;
+  place-items: center;
+  color: var(--text-secondary);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.footer-social:hover {
+  color: var(--accent-ice);
+  transform: translateY(-1px);
 }

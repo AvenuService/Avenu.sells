@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { InstagramIcon } from "./Icons";
 
 const cols = [
   {
@@ -75,6 +76,7 @@ export default function Footer() {
         <div className="footer-bottom">
           <p className="muted">© {new Date().getFullYear()} Avenu, Inc. — avenu.sale · <a href="mailto:contact@avenu.sale" style={{ color: "var(--accent-ice)" }}>contact@avenu.sale</a></p>
           <div className="footer-legal">
+            <a href="https://www.instagram.com/avenu_sale/" target="_blank" rel="noreferrer noopener" className="footer-social" aria-label="Avenu on Instagram"><InstagramIcon size={16} /></a>
             <Link to="/privacy">Privacy</Link>
             <Link to="/terms">Terms</Link>
             <Link to="/privacy#cookies">Cookies</Link>

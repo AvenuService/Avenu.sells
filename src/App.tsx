@@ -6,6 +6,7 @@ import AddedToast from "./components/AddedToast";
 import AdminGuard from "./components/AdminGuard";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import BackToTop from "./components/BackToTop";
 
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
@@ -30,8 +31,9 @@ function ScrollToTopOnNav() {
 function StorefrontChrome() {
   return (
     <>
+      <a href="#main" className="skip-link">Skip to content</a>
       <Navbar />
-      <main style={{ flex: 1 }}>
+      <main id="main" style={{ flex: 1 }}>
         <Outlet />
       </main>
       <Footer />
@@ -68,6 +70,7 @@ export default function App() {
       {/* These render globally (cart drawer + toast can appear on admin too) */}
       <CartDrawer />
       <AddedToast />
+      <BackToTop />
     </BrowserRouter>
   );
 }

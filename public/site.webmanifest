@@ -1,0 +1,1 @@
+﻿{ "name": "Avenu", "short_name": "Avenu", "description": "Curated digital and physical essentials plus custom website packages.", "start_url": "/", "display": "standalone", "background_color": "#021024", "theme_color": "#021024", "icons": [{ "src": "/A_for_logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }] }
