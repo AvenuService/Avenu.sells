@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useCart } from "../store/CartContext";
 import { formatPrice } from "../data/products";
 import Breadcrumbs from "../components/Breadcrumbs";
-import { CartIcon, MinusIcon, PlusIcon, TrashIcon, ArrowRight, TruckIcon } from "../components/Icons";
+import { CartIcon, MinusIcon, PlusIcon, TrashIcon, ArrowRight, TruckIcon, SparkIcon } from "../components/Icons";
 
 export default function Cart() {
   const { items, subtotal, shipping, tax, total, updateQuantity, removeItem, clear, count } = useCart();
@@ -22,6 +22,8 @@ export default function Cart() {
   }
 
   const remaining = 150 - subtotal;
+  const serviceOnly = items.length > 0 && items.every((i) => i.type === "service");
+  const hasService = items.some((i) => i.type === "service");
 
   return (
     <div className="container cart-page">
@@ -34,7 +36,7 @@ export default function Cart() {
 
       <div className="cart-page-grid">
         <div className="cart-list">
-          {shipping > 0 && (
+          {!serviceOnly && shipping > 0 && (
             <div className="card" style={{ padding: "0.85rem 1.1rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
               <TruckIcon size={18} style={{ color: "var(--accent-ice)" }} />
               <span className="muted" style={{ fontSize: "0.92rem" }}>
@@ -42,10 +44,21 @@ export default function Cart() {
               </span>
             </div>
           )}
-          {shipping === 0 && (
+          {!serviceOnly && shipping === 0 && (
             <div className="card" style={{ padding: "0.85rem 1.1rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
               <TruckIcon size={18} style={{ color: "var(--accent-ice)" }} />
               <span style={{ fontSize: "0.92rem", color: "var(--accent-ice)" }}>You've unlocked <strong>free shipping</strong>.</span>
+            </div>
+          )}
+          {hasService && (
+            <div className="card" style={{ padding: "0.85rem 1.1rem", display: "flex", alignItems: "center", gap: "0.6rem", borderColor: "rgba(193,232,255,0.25)" }}>
+              <SparkIcon size={18} style={{ color: "var(--accent-ice)" }} />
+              <span className="muted" style={{ fontSize: "0.92rem" }}>
+                {serviceOnly
+                  ? <>Includes a <strong style={{ color: "var(--accent-ice)" }}>website package</strong>. We'll reach out to schedule your kickoff call after checkout.</>
+                  : <>Mixed order — your <strong style={{ color: "var(--accent-ice)" }}>website package</strong> is delivered digitally, physical items ship separately.</>
+                }
+              </span>
             </div>
           )}
 
@@ -59,11 +72,15 @@ export default function Cart() {
                 <span className="cart-row-color">{item.color}</span>
                 <span className="muted" style={{ fontSize: "0.82rem" }}>{formatPrice(item.price)} each</span>
                 <div className="cart-row-actions">
-                  <div className="qty" style={{ background: "rgba(2,16,36,0.4)" }}>
-                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease"><MinusIcon size={14} /></button>
-                    <span>{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase"><PlusIcon size={14} /></button>
-                  </div>
+                  {item.type === "service" ? (
+                    <span className="muted" style={{ fontSize: "0.82rem", padding: "0.4rem 0.8rem", border: "1px solid var(--border-faint)", borderRadius: "var(--radius-sm)" }}>1 package</span>
+                  ) : (
+                    <div className="qty" style={{ background: "rgba(2,16,36,0.4)" }}>
+                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease"><MinusIcon size={14} /></button>
+                      <span>{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase"><PlusIcon size={14} /></button>
+                    </div>
+                  )}
                   <button className="cart-row-remove" onClick={() => removeItem(item.id)} aria-label={`Remove ${item.name}`}>
                     <TrashIcon size={14} /> Remove
                   </button>
@@ -85,7 +102,11 @@ export default function Cart() {
             <h2>Order summary</h2>
           </div>
           <div className="summary-line"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-          <div className="summary-line"><span>Shipping</span><span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span></div>
+          {serviceOnly ? (
+            <div className="summary-line"><span>Delivery</span><span style={{ color: "var(--accent-ice)" }}>Digital handoff</span></div>
+          ) : (
+            <div className="summary-line"><span>Shipping</span><span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span></div>
+          )}
           <div className="summary-line"><span>Tax (est. 8%)</span><span>{formatPrice(tax)}</span></div>
           <div className="summary-total"><span>Total</span><span>{formatPrice(total)}</span></div>
 

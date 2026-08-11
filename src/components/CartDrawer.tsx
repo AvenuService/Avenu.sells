@@ -5,6 +5,7 @@ import { CartIcon, CloseIcon, MinusIcon, PlusIcon, TrashIcon } from "./Icons";
 
 export default function CartDrawer() {
   const { isOpen, closeCart, items, subtotal, shipping, total, updateQuantity, removeItem, count } = useCart();
+  const serviceOnly = items.length > 0 && items.every((i) => i.type === "service");
 
   return (
     <div className={`cart-drawer ${isOpen ? "open" : ""}`} aria-hidden={!isOpen}>
@@ -40,11 +41,15 @@ export default function CartDrawer() {
                     <Link to={`/product/${item.imageSlug}`} className="cart-item-name" onClick={closeCart}>{item.name}</Link>
                     <span className="cart-item-color">{item.color}</span>
                     <div className="cart-item-bottom">
-                      <div className="qty">
-                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease"><MinusIcon size={14} /></button>
-                        <span>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase"><PlusIcon size={14} /></button>
-                      </div>
+                      {item.type === "service" ? (
+                        <span className="muted" style={{ fontSize: "0.78rem", padding: "0.25rem 0.55rem", border: "1px solid var(--border-faint)", borderRadius: "var(--radius-sm)" }}>1 package</span>
+                      ) : (
+                        <div className="qty">
+                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease"><MinusIcon size={14} /></button>
+                          <span>{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase"><PlusIcon size={14} /></button>
+                        </div>
+                      )}
                       <span className="cart-item-price">{formatPrice(item.price * item.quantity)}</span>
                     </div>
                   </div>
@@ -57,9 +62,18 @@ export default function CartDrawer() {
 
             <footer className="cart-foot">
               <div className="cart-line"><span className="muted">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-              <div className="cart-line"><span className="muted">Shipping</span><span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span></div>
+              {serviceOnly ? (
+                <div className="cart-line"><span className="muted">Delivery</span><span style={{ color: "var(--accent-ice)" }}>Digital handoff</span></div>
+              ) : (
+                <div className="cart-line"><span className="muted">Shipping</span><span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span></div>
+              )}
               <div className="cart-line cart-line-total"><span>Total</span><span>{formatPrice(total)}</span></div>
-              <p className="cart-hint muted">{subtotal < 150 ? `Add ${formatPrice(150 - subtotal)} for free shipping.` : "You've unlocked free shipping."}</p>
+              {!serviceOnly && (
+                <p className="cart-hint muted">{subtotal < 150 ? `Add ${formatPrice(150 - subtotal)} for free shipping.` : "You've unlocked free shipping."}</p>
+              )}
+              {serviceOnly && (
+                <p className="cart-hint muted">Includes a website package. We'll reach out after checkout to schedule your kickoff call.</p>
+              )}
               <Link to="/cart" className="btn btn-ghost btn-block" onClick={closeCart}>View full cart</Link>
               <Link to="/checkout" className="btn btn-primary btn-block" onClick={closeCart}>Checkout · {formatPrice(total)}</Link>
             </footer>

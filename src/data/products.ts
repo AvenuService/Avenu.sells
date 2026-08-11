@@ -207,16 +207,3 @@ export function generateComplexCode(blocks = 4, blockLen = 5) {
   }
   return parts.join("-");
 }
-
-const PALETTE: [string, string][] = [
-  ["#1f4f8a", "#0a3568"],
-  ["#0a3568", "#021024"],
-  ["#3a6aa0", "#052659"],
-  ["#7DA0CA", "#5483B3"],
-  ["#C1E8FF", "#5483B3"],
-];
-export function pickGradient(seed = "") {
-  let n = 0;
-  for (let i = 0; i < seed.length; i++) n = (n * 31 + seed.charCodeAt(i)) >>> 0;
-  return PALETTE[n % PALETTE.length];
-}

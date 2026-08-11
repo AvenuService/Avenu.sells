@@ -20,12 +20,15 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
         {product.oldPrice && <span className="pc-flag">Save {formatPrice(product.oldPrice - product.price)}</span>}
         {product.bestseller && <span className="pc-flag flag-ice">Bestseller</span>}
+        {product.type === "service" && <span className="pc-flag flag-ice">Service</span>}
       </Link>
 
       <div className="pc-body">
         <div className="pc-meta">
           <span className="pc-cat">{product.brand}</span>
-          <span className="pc-rate"><StarIcon size={13} /> {product.rating.toFixed(1)}<span className="pc-rev">({product.reviews})</span></span>
+          {product.reviews > 0 && (
+            <span className="pc-rate"><StarIcon size={13} /> {product.rating.toFixed(1)}<span className="pc-rev">({product.reviews})</span></span>
+          )}
         </div>
 
         <h3 className="pc-title"><Link to={`/product/${product.slug}`}>{product.name}</Link></h3>
@@ -36,13 +39,23 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="pc-price">{formatPrice(product.price)}</span>
             {product.oldPrice && <span className="pc-old">{formatPrice(product.oldPrice)}</span>}
           </div>
-          <button
-            className="btn btn-primary btn-sm pc-add"
-            onClick={(e) => { e.preventDefault(); addItem(product.id, { quantity: 1 }); }}
-            aria-label={`Add ${product.name} to cart`}
-          >
-            <CartIcon size={15} /> Add
-          </button>
+          {product.type === "service" ? (
+            <Link
+              to={`/product/${product.slug}`}
+              className="btn btn-primary btn-sm pc-add"
+              aria-label={`View ${product.name} package`}
+            >
+              View package
+            </Link>
+          ) : (
+            <button
+              className="btn btn-primary btn-sm pc-add"
+              onClick={(e) => { e.preventDefault(); addItem(product.id, { quantity: 1 }); }}
+              aria-label={`Add ${product.name} to cart`}
+            >
+              <CartIcon size={15} /> Add
+            </button>
+          )}
         </div>
       </div>
     </article>

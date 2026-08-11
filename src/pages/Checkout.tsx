@@ -21,9 +21,10 @@ export default function Checkout() {
   const [payment, setPayment] = useState<string>("Card");
   const [placed, setPlaced] = useState(false);
 
+  const serviceOnly = items.length > 0 && items.every((i) => i.type === "service");
   const deliveryPrice = deliveryOptions.find((d) => d.id === delivery)?.price ?? 0;
   const freeShip = subtotal >= 150;
-  const finalShipping = freeShip ? 0 : deliveryPrice;
+  const finalShipping = serviceOnly ? 0 : (freeShip ? 0 : deliveryPrice);
   const total = subtotal + finalShipping + tax;
 
   function placeOrder(e: React.FormEvent) {
@@ -75,31 +76,56 @@ export default function Checkout() {
             </div>
           </section>
 
-          <section className="checkout-section fade-up">
-            <h2>Shipping address</h2>
-            <div className="form-grid">
-              <div className="form-group"><label htmlFor="firstName">First name</label><input id="firstName" className="field" placeholder="Avery" required /></div>
-              <div className="form-group"><label htmlFor="lastName">Last name</label><input id="lastName" className="field" placeholder="Frost" required /></div>
-              <div className="form-group full"><label htmlFor="address">Street address</label><input id="address" className="field" placeholder="221B Icy Lane" required /></div>
-              <div className="form-group"><label htmlFor="city">City</label><input id="city" className="field" placeholder="Aurora" required /></div>
-              <div className="form-group"><label htmlFor="zip">ZIP / Postal</label><input id="zip" className="field" placeholder="00000" required /></div>
-              <div className="form-group full"><label htmlFor="country">Country</label><input id="country" className="field" placeholder="United States" defaultValue="United States" required /></div>
-            </div>
-          </section>
+          {!serviceOnly && (
+            <section className="checkout-section fade-up">
+              <h2>Shipping address</h2>
+              <div className="form-grid">
+                <div className="form-group"><label htmlFor="firstName">First name</label><input id="firstName" className="field" placeholder="Avery" required /></div>
+                <div className="form-group"><label htmlFor="lastName">Last name</label><input id="lastName" className="field" placeholder="Frost" required /></div>
+                <div className="form-group full"><label htmlFor="address">Street address</label><input id="address" className="field" placeholder="221B Icy Lane" required /></div>
+                <div className="form-group"><label htmlFor="city">City</label><input id="city" className="field" placeholder="Aurora" required /></div>
+                <div className="form-group"><label htmlFor="zip">ZIP / Postal</label><input id="zip" className="field" placeholder="00000" required /></div>
+                <div className="form-group full"><label htmlFor="country">Country</label><input id="country" className="field" placeholder="United States" defaultValue="United States" required /></div>
+              </div>
+            </section>
+          )}
 
-          <section className="checkout-section fade-up">
-            <h2>Delivery</h2>
-            <div className="delivery-options">
-              {deliveryOptions.map((opt) => (
-                <label key={opt.id} className={`delivery-opt ${delivery === opt.id ? "active" : ""}`}>
-                  <span className="do-radio" />
-                  <input type="radio" name="delivery" value={opt.id} checked={delivery === opt.id} onChange={() => setDelivery(opt.id)} style={{ position: "absolute", opacity: 0, width: 0, height: 0 }} />
-                  <span className="delivery-opt-text"><strong>{opt.name}</strong><span>{opt.note}{opt.id === "standard" && freeShip ? " · Free over $150" : ""}</span></span>
-                  <span className="delivery-opt-price">{opt.price === 0 ? "Free" : formatPrice(opt.price)}</span>
-                </label>
-              ))}
-            </div>
-          </section>
+          {serviceOnly && (
+            <section className="checkout-section fade-up">
+              <h2>Project brief</h2>
+              <div className="form-grid">
+                <div className="form-group full"><label htmlFor="projectName">Project / company name</label><input id="projectName" className="field" placeholder="Avery Studio" /></div>
+                <div className="form-group full"><label htmlFor="projectType">What are we building?</label>
+                  <select id="projectType" className="field" defaultValue="Website">
+                    <option>Website</option>
+                    <option>Web app</option>
+                    <option>Online store</option>
+                    <option>Portfolio</option>
+                    <option>Something else</option>
+                  </select>
+                </div>
+                <div className="form-group full"><label htmlFor="brief">Tell us about it</label><textarea id="brief" className="field" rows={4} placeholder="What does it need to do? Any must-haves, references, timeline…" /></div>
+                <div className="form-group"><label htmlFor="deadline">Target launch date</label><input id="deadline" className="field" type="date" /></div>
+                <div className="form-group"><label htmlFor="budget">Budget (optional)</label><input id="budget" className="field" placeholder="$" /></div>
+              </div>
+            </section>
+          )}
+
+          {!serviceOnly && (
+            <section className="checkout-section fade-up">
+              <h2>Delivery</h2>
+              <div className="delivery-options">
+                {deliveryOptions.map((opt) => (
+                  <label key={opt.id} className={`delivery-opt ${delivery === opt.id ? "active" : ""}`}>
+                    <span className="do-radio" />
+                    <input type="radio" name="delivery" value={opt.id} checked={delivery === opt.id} onChange={() => setDelivery(opt.id)} style={{ position: "absolute", opacity: 0, width: 0, height: 0 }} />
+                    <span className="delivery-opt-text"><strong>{opt.name}</strong><span>{opt.note}{opt.id === "standard" && freeShip ? " · Free over $150" : ""}</span></span>
+                    <span className="delivery-opt-price">{opt.price === 0 ? "Free" : formatPrice(opt.price)}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="checkout-section fade-up">
             <h2>Payment</h2>
@@ -150,7 +176,11 @@ export default function Checkout() {
 
           <hr className="divider" />
           <div className="summary-line"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-          <div className="summary-line"><span>Delivery</span><span>{finalShipping === 0 ? "Free" : formatPrice(finalShipping)}</span></div>
+          {serviceOnly ? (
+            <div className="summary-line"><span>Delivery</span><span style={{ color: "var(--accent-ice)" }}>Digital handoff</span></div>
+          ) : (
+            <div className="summary-line"><span>Delivery</span><span>{finalShipping === 0 ? "Free" : formatPrice(finalShipping)}</span></div>
+          )}
           <div className="summary-line"><span>Tax (est.)</span><span>{formatPrice(tax)}</span></div>
           <div className="summary-total"><span>Total</span><span>{formatPrice(total)}</span></div>
         </aside>

@@ -14,8 +14,10 @@ import {
   MinusIcon,
   PlusIcon,
   ShieldIcon,
+  SparkIcon,
   SwapIcon,
   TruckIcon,
+  ZapIcon,
 } from "../components/Icons";
 
 export default function ProductDetails() {
@@ -49,6 +51,7 @@ export default function ProductDetails() {
 
   const relatedProducts = related(product.slug, 4);
   const inStock = product.stock > 0;
+  const isService = product.type === "service";
   const p: Product = product;
 
   function thumbStyle(angle: number, depth: number): React.CSSProperties {
@@ -78,6 +81,7 @@ export default function ProductDetails() {
             style={{ background: `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)` }}
           >
             <span>{product.name.charAt(0)}</span>
+            {isService && <span className="pd-preview-note">Gallery preview coming soon</span>}
           </div>
           <div className="pd-thumb-row">
             {[0, 1, 2, 3].map((i) => (
@@ -111,46 +115,64 @@ export default function ProductDetails() {
             </>}
           </div>
 
-          <div>
-            <p className="pd-section-title">Color · <span style={{ color: "var(--text-primary)" }}>{color}</span></p>
-            <div className="color-row">
-              {product.colors.map((c) => (
-                <button
-                  key={c.name}
-                  className={`color-dot ${color === c.name ? "active" : ""}`}
-                  onClick={() => setColor(c.name)}
-                  aria-label={c.name}
-                  title={c.name}
-                >
-                  <span className="inner" style={{ background: c.hex }} />
-                </button>
-              ))}
+          {product.colors.length > 0 && !isService && (
+            <div>
+              <p className="pd-section-title">Color · <span style={{ color: "var(--text-primary)" }}>{color}</span></p>
+              <div className="color-row">
+                {product.colors.map((c) => (
+                  <button
+                    key={c.name}
+                    className={`color-dot ${color === c.name ? "active" : ""}`}
+                    onClick={() => setColor(c.name)}
+                    aria-label={c.name}
+                    title={c.name}
+                  >
+                    <span className="inner" style={{ background: c.hex }} />
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="qty-row">
-            <div className="qty-stepper">
-              <button onClick={() => setQty(Math.max(1, qty - 1))} aria-label="Decrease"><MinusIcon size={16} /></button>
-              <span className="qty-val">{qty}</span>
-              <button onClick={() => setQty(Math.min(product.stock, qty + 1))} aria-label="Increase"><PlusIcon size={16} /></button>
-            </div>
-            <div className="badge" style={inStock ? { color: "var(--accent-ice)", borderColor: "rgba(193,232,255,0.25)", background: "rgba(193,232,255,0.10)" } : { color: "var(--accent-muted)" }}>
-              {inStock ? <><CheckIcon size={12} /> In stock · {product.stock} left</> : "Sold out"}
-            </div>
+            {isService ? (
+              <div className="badge" style={{ color: "var(--accent-ice)", borderColor: "rgba(193,232,255,0.25)", background: "rgba(193,232,255,0.10)" }}>
+                <CheckIcon size={12} /> Open for bookings · 1 project per slot
+              </div>
+            ) : (
+              <div className="qty-stepper">
+                <button onClick={() => setQty(Math.max(1, qty - 1))} aria-label="Decrease"><MinusIcon size={16} /></button>
+                <span className="qty-val">{qty}</span>
+                <button onClick={() => setQty(Math.min(product.stock, qty + 1))} aria-label="Increase"><PlusIcon size={16} /></button>
+              </div>
+            )}
+            {!isService && (
+              <div className="badge" style={inStock ? { color: "var(--accent-ice)", borderColor: "rgba(193,232,255,0.25)", background: "rgba(193,232,255,0.10)" } : { color: "var(--accent-muted)" }}>
+                {inStock ? <><CheckIcon size={12} /> In stock · {product.stock} left</> : "Sold out"}
+              </div>
+            )}
           </div>
 
           <div className="pd-actions">
-            <button className="btn btn-primary btn-lg" disabled={!inStock} onClick={() => addItem(product.id, { color, quantity: qty })}>
-              <CartIcon size={18} /> Add to cart · {formatPrice(product.price * qty)}
+            <button className="btn btn-primary btn-lg" disabled={!inStock} onClick={() => addItem(product.id, { color, quantity: isService ? 1 : qty })}>
+              <CartIcon size={18} /> {isService ? "Book this package" : <>Add to cart · {formatPrice(product.price * qty)}</>}
             </button>
             <button className="btn btn-ghost" aria-label="Save"><HeartIcon size={18} /></button>
           </div>
 
-          <div className="pd-extra">
-            <div className="pd-extra-row"><TruckIcon size={18} /><span><strong>Free 2-day shipping</strong> within the contiguous US. Ships next business day from your order.</span></div>
-            <div className="pd-extra-row"><SwapIcon size={18} /><span><strong>30-day returns</strong>. No-questions refund if it's not for you.</span></div>
-            <div className="pd-extra-row"><ShieldIcon size={18} /><span><strong>2-year warranty</strong> covering manufacturer defects.</span></div>
-          </div>
+          {isService ? (
+            <div className="pd-extra">
+              <div className="pd-extra-row"><SparkIcon size={18} /><span><strong>Project kickoff call</strong> within 2 business days of your order to scope the build.</span></div>
+              <div className="pd-extra-row"><ZapIcon size={18} /><span><strong>Source code handoff</strong> — you own everything we build. No lock-in.</span></div>
+              <div className="pd-extra-row"><ShieldIcon size={18} /><span><strong>Post-launch support</strong> included with every package. We don't disappear after deploy.</span></div>
+            </div>
+          ) : (
+            <div className="pd-extra">
+              <div className="pd-extra-row"><TruckIcon size={18} /><span><strong>Free 2-day shipping</strong> within the contiguous US. Ships next business day from your order.</span></div>
+              <div className="pd-extra-row"><SwapIcon size={18} /><span><strong>30-day returns</strong>. No-questions refund if it's not for you.</span></div>
+              <div className="pd-extra-row"><ShieldIcon size={18} /><span><strong>2-year warranty</strong> covering manufacturer defects.</span></div>
+            </div>
+          )}
 
           <div>
             <p className="pd-section-title">Description</p>
@@ -167,11 +189,22 @@ export default function ProductDetails() {
           <div>
             <p className="pd-section-title">Specifications</p>
             <dl className="pd-meta-table">
-              <dt>Brand</dt><dd>{product.brand}</dd>
+              <dt>Studio</dt><dd>{product.brand}</dd>
               <dt>Category</dt><dd style={{ textTransform: "capitalize" }}>{product.category}</dd>
-              <dt>Colors</dt><dd>{product.colors.map((c) => c.name).join(" · ")}</dd>
-              <dt>SKU</dt><dd>{product.id.toUpperCase()}-{color.substring(0, 3).toUpperCase()}</dd>
-              <dt>Warranty</dt><dd>2 years</dd>
+              {isService ? (
+                <>
+                  <dt>Delivery</dt><dd>Digital · via email</dd>
+                  <dt>Scope</dt><dd>Custom build, quoted per package</dd>
+                  <dt>Timeline</dt><dd>2–6 weeks depending on tier</dd>
+                  <dt>Ownership</dt><dd>You own the source</dd>
+                </>
+              ) : (
+                <>
+                  <dt>Colors</dt><dd>{product.colors.map((c) => c.name).join(" · ")}</dd>
+                  <dt>SKU</dt><dd>{product.id.toUpperCase()}-{color.substring(0, 3).toUpperCase()}</dd>
+                  <dt>Warranty</dt><dd>2 years</dd>
+                </>
+              )}
             </dl>
           </div>
         </div>
