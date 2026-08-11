@@ -97,3 +97,9 @@ export const BoxIcon = ({ size, ...rest }: IconProps) => (
 export const GlobeIcon = ({ size, ...rest }: IconProps) => (
   <svg {...base(size, rest)}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" /></svg>
 );
+export const MailIcon = ({ size, ...rest }: IconProps) => (
+  <svg {...base(size, rest)}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+);
+export const ChatIcon = ({ size, ...rest }: IconProps) => (
+  <svg {...base(size, rest)}><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.1-5.4A8.5 8.5 0 1 1 21 11.5z" /></svg>
+);
