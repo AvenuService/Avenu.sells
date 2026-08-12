@@ -18,17 +18,8 @@
 .hero-stat strong { font-family: var(--font-display); font-size: 1.6rem; color: var(--accent-ice); display: block; line-height: 1; }
 .hero-stat span { font-size: 0.85rem; color: var(--text-muted); }
 
-/* Hero visual â€” abstract product collage */
+/* Hero visual — porthole for the 3D crystal */
 .hero-visual { position: relative; height: clamp(380px, 52vw, 540px); }
-.hv-blob { position: absolute; border-radius: 38px; filter: blur(2px); box-shadow: var(--shadow-card); }
-.hv-blob.b1 { inset: 0 12% 12% 0; background: linear-gradient(135deg, var(--accent-ice) 0%, var(--accent-soft) 40%, var(--bg-secondary) 100%); animation: float 7s ease-in-out infinite; }
-.hv-blob.b2 { inset: 28% 0 0 28%; background: linear-gradient(135deg, var(--bg-elevated), var(--bg-secondary)); border: 1px solid var(--border-strong); }
-.hv-glyph {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  font-family: var(--font-display); font-weight: 800; font-size: clamp(8rem, 22vw, 14rem);
-  color: var(--accent-ice); opacity: 0.5; text-shadow: 0 4px 80px rgba(193,232,255,0.4); letter-spacing: -0.05em; z-index: 2;
-}
-.hv-orb { position: absolute; bottom: -20px; right: -10px; width: 130px; height: 130px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, var(--accent-ice) 0%, var(--accent-soft) 30%, var(--bg-secondary) 100%); box-shadow: 0 20px 60px -10px rgba(0,0,0,0.7); animation: float 6s ease-in-out infinite; z-index: 3; }
 .hv-chip { position: absolute; top: 22%; left: -24px; padding: 0.65rem 1rem; border-radius: var(--radius-md); background: rgba(2,16,36,0.85); backdrop-filter: blur(12px); border: 1px solid var(--border-strong); box-shadow: 0 12px 32px -12px rgba(0,0,0,0.7); display: flex; gap: 0.6rem; align-items: center; z-index: 4; font-size: 0.8rem; }
 .hv-chip .pip { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-ice); box-shadow: 0 0 10px var(--accent-ice); }
 .hv-chip strong { font-family: var(--font-display); }
