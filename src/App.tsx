@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import CartDrawer from "./components/CartDrawer";
+import AccountDrawer from "./components/AccountDrawer";
 import AddedToast from "./components/AddedToast";
 import AdminGuard from "./components/AdminGuard";
 import Navbar from "./components/Navbar";
@@ -70,6 +71,7 @@ export default function App() {
 
       {/* These render globally (cart drawer + toast can appear on admin too) */}
       <CartDrawer />
+      <AccountDrawer />
       <AddedToast />
       <BackToTop />
     </BrowserRouter>

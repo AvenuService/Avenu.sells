@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useCart } from "../store/CartContext";
 import { useCatalog } from "../store/CatalogContext";
+import { useShopperAuth, avatarUrl } from "../store/ShopperAuthContext";
 import { useDebounce } from "../hooks/useLocalStorage";
 import { CartIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "./Icons";
 
@@ -19,6 +20,8 @@ export default function Navbar() {
   const debounced = useDebounce(query, 200);
   const { products } = useCatalog();
   const { count, openCart } = useCart();
+  const { session, openAccount } = useShopperAuth();
+  const avatar = avatarUrl(session);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -112,7 +115,17 @@ export default function Navbar() {
             )}
           </form>
 
-          <button className="nav-icon-btn" aria-label="Account"><UserIcon size={20} /></button>
+          <button
+            className="nav-icon-btn nav-account-btn"
+            aria-label={session ? "Open account" : "Sign in"}
+            onClick={openAccount}
+          >
+            {avatar ? (
+              <img src={avatar} alt="" className="nav-account-img" referrerPolicy="no-referrer" width={20} height={20} />
+            ) : (
+              <UserIcon size={20} />
+            )}
+          </button>
           <button className="nav-icon-btn nav-cart-btn" aria-label="Open cart" onClick={openCart}>
             <CartIcon size={20} />
             {count > 0 && <span className="cart-count">{count}</span>}
