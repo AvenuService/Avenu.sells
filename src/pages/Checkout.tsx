@@ -2,9 +2,10 @@ import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../store/CartContext";
 import { useOrders, generateOrderCode } from "../store/OrdersContext";
+import { useShopperAuth } from "../store/ShopperAuthContext";
 import { formatPrice } from "../data/products";
 import Breadcrumbs from "../components/Breadcrumbs";
-import { ArrowRight, CheckIcon, ShieldIcon, TruckIcon } from "../components/Icons";
+import { ArrowRight, CheckIcon, ShieldIcon, TruckIcon, GoogleIcon } from "../components/Icons";
 
 type Delivery = "standard" | "express" | "nextday";
 const deliveryOptions: { id: Delivery; name: string; note: string; price: number }[] = [
@@ -18,10 +19,12 @@ const paymentMethods = ["Card", "Apple Pay", "PayPal", "Affirm"] as const;
 export default function Checkout() {
   const { items, subtotal, tax, clear } = useCart();
   const { createOrder } = useOrders();
+  const { session, loading: authLoading, signInWithGoogle, error: authError } = useShopperAuth();
   const navigate = useNavigate();
   const [delivery, setDelivery] = useState<Delivery>("standard");
   const [payment, setPayment] = useState<string>("Card");
   const [placed, setPlaced] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   const serviceOnly = items.length > 0 && items.every((i) => i.type === "service");
@@ -100,6 +103,79 @@ export default function Checkout() {
     );
   }
 
+  // Auth gate — must be signed in to place an order. Keep cart intact while
+  // showing the wall so the user can preview the order they're about to
+  // place once they sign in.
+  if (!session) {
+    return (
+      <div className="container section">
+        <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Cart", to: "/cart" }, { label: "Checkout" }]} />
+
+        <div className="checkout-steps fade-up" style={{ marginTop: "1rem" }}>
+          <div className="step active"><span className="step-num">1</span> Cart</div>
+          <div className="step-connector" />
+          <div className="step active"><span className="step-num">2</span> Checkout</div>
+          <div className="step-connector" />
+          <div className="step"><span className="step-num">3</span> Confirmation</div>
+        </div>
+
+        <div className="checkout-gate card fade-up">
+          <div className="gate-art"><ShieldIcon size={28} /></div>
+          <p className="eyebrow">Sign in required</p>
+          <h1 className="section-title" style={{ marginBottom: "0.5rem" }}>Sign in to complete checkout.</h1>
+          <p className="muted" style={{ marginBottom: "1.4rem", maxWidth: "440px" }}>
+            Your cart is waiting. Sign in with Google so we can attach your order to your account and
+            email you a copy of the receipt. We won't charge anything yet — payment happens on the next step.
+          </p>
+
+          <button
+            type="button"
+            className="google-btn"
+            onClick={async () => {
+              if (signingIn) return;
+              setSigningIn(true);
+              const res = await signInWithGoogle();
+              if (!res.ok) {
+                setSigningIn(false);
+                // The error is also surfaced in authError below.
+              }
+              // On success, the browser navigates away to Google's consent screen.
+              // The React redirect happens automatically once they come back.
+            }}
+            disabled={signingIn || authLoading}
+          >
+            <GoogleIcon size={20} />
+            <span>{signingIn ? "Redirecting to Google…" : "Continue with Google"}</span>
+          </button>
+
+          {authError && (
+            <div className="gate-error" role="alert">
+              <strong>Couldn't start sign-in.</strong>
+              <p className="muted" style={{ marginTop: "0.3rem" }}>
+                {authError}
+                {/google/i.test(authError) || /provider/i.test(authError) || /disabled/i.test(authError)
+                  ? " — Make sure the Google provider is enabled under Supabase → Authentication → Providers."
+                  : ""}
+              </p>
+            </div>
+          )}
+
+          <div className="gate-meta">
+            <ShieldIcon size={14} />
+            <span>Secured by Supabase Auth · We never see your Google password.</span>
+          </div>
+
+          <div className="gate-back">
+            <Link to="/cart" className="btn btn-ghost btn-sm">← Back to cart</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Capture the session email once — pre-fill the Contact field if empty.
+  const sessionEmail = session?.user?.email ?? "";
+
   return (
     <div className="container checkout">
       <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Cart", to: "/cart" }, { label: "Checkout" }]} />
@@ -126,7 +202,7 @@ export default function Checkout() {
           <section className="checkout-section fade-up">
             <h2>Contact</h2>
             <div className="form-grid">
-              <div className="form-group"><label htmlFor="email">Email</label><input id="email" className="field" type="email" placeholder="you@avenu.sale" required /></div>
+              <div className="form-group"><label htmlFor="email">Email</label><input id="email" className="field" type="email" placeholder="you@avenu.sale" required defaultValue={sessionEmail} /></div>
               <div className="form-group"><label htmlFor="phone">Phone</label><input id="phone" className="field" type="tel" placeholder="+1 555 000 0000" /></div>
             </div>
           </section>

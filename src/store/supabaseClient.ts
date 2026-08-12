@@ -22,7 +22,11 @@ const isConfigured = !!(
 
 export const supabase: SupabaseClient | null = isConfigured
   ? createClient(url as string, anonKey as string, {
-      auth: { persistSession: false, autoRefreshToken: false },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
       realtime: { params: { eventsPerSecond: 2 } },
     })
   : null;

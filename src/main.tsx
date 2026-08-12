@@ -5,6 +5,7 @@ import { CatalogProvider } from "./store/CatalogContext";
 import { CartProvider } from "./store/CartContext";
 import { OrdersProvider } from "./store/OrdersContext";
 import { AdminAuthProvider } from "./store/AdminAuthContext";
+import { ShopperAuthProvider } from "./store/ShopperAuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./styles/global.css";
 import "./styles/layout.css";
@@ -18,7 +19,9 @@ createRoot(document.getElementById("root")!).render(
         <OrdersProvider>
           <CartProvider>
             <AdminAuthProvider>
-              <App />
+              <ShopperAuthProvider>
+                <App />
+              </ShopperAuthProvider>
             </AdminAuthProvider>
           </CartProvider>
         </OrdersProvider>
