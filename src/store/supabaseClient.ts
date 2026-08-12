@@ -25,7 +25,10 @@ export const supabase: SupabaseClient | null = isConfigured
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        // We handle URL-hash detection manually in main.tsx + ShopperAuthContext
+        // (see consumeOAuthHash) because the auto-detect races with React
+        // mounting and causes infinite loading on OAuth redirects.
+        detectSessionInUrl: false,
       },
       realtime: { params: { eventsPerSecond: 2 } },
     })

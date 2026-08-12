@@ -42,6 +42,47 @@ const redirectURL = () =>
 const META_USERNAME = "username";
 const META_FULL_NAME = "full_name";
 
+// Manually strip + parse an OAuth hash fragment synchronously. Exported so
+// main.tsx can call it BEFORE React mounts, so BrowserRouter never sees the
+// giant access_token=... fragment (which can confuse routing and cause
+// infinite loading). Returns the parsed tokens if present, or null.
+export function consumeOAuthHash(): {
+  access_token: string;
+  refresh_token: string;
+  provider_token?: string | null;
+  error?: string | null;
+} | null {
+  if (typeof window === "undefined") return null;
+  const rawHash = window.location.hash || "";
+  const isOAuth =
+    rawHash.includes("access_token=") ||
+    rawHash.includes("refresh_token=") ||
+    rawHash.includes("provider_token=") ||
+    rawHash.includes("error=") ||
+    rawHash.includes("error_description=");
+  if (!isOAuth) return null;
+
+  const params = new URLSearchParams(rawHash.startsWith("#") ? rawHash.slice(1) : rawHash);
+  const err = params.get("error_description") || params.get("error");
+  const access_token = params.get("access_token");
+  const refresh_token = params.get("refresh_token");
+  const provider_token = params.get("provider_token");
+
+  // Always strip the hash regardless of outcome, so the URL is clean before
+  // React/Router render and so a refresh doesn't re-trigger parsing.
+  try {
+    const cleanURL =
+      window.location.origin + window.location.pathname + window.location.search;
+    window.history.replaceState(null, "", cleanURL);
+  } catch {
+    /* ignore */
+  }
+
+  if (err) return { access_token: "", refresh_token: "", error: err };
+  if (!access_token || !refresh_token) return null;
+  return { access_token, refresh_token, provider_token };
+}
+
 export function ShopperAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -56,74 +97,64 @@ export function ShopperAuthProvider({ children }: { children: ReactNode }) {
     let sub: Subscription | null = null;
     let cancelled = false;
 
-    // Detect an OAuth/implicit-grant fragment in the URL hash BEFORE we boot
-    // the auth client. Supabase v2's auto-detect (detectSessionInUrl: true)
-    // only runs on the FIRST _initialize() call — and the client is eagerly
-    // constructed in supabaseClient.ts at module load, so that init may have
-    // already fired before this effect. Calling sb.auth.initialize() here
-    // RE-RUNS the URL detection path (in v2.45 it's idempotent — guarded by
-    // an internal `initializePromise`), so any hash fragment still sitting
-    // in the URL gets parsed into a session this render.
-    const hash = typeof window !== "undefined" ? window.location.hash || "" : "";
-    const hasOAuthFragment =
-      hash.includes("access_token=") ||
-      hash.includes("refresh_token=") ||
-      hash.includes("expires_in=") ||
-      hash.includes("token_type=") ||
-      hash.includes("provider_token=") ||
-      hash.includes("error_description=") ||
-      hash.includes("error=");
-
-    let oauthError: string | null = null;
-    if (hasOAuthFragment) {
-      const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
-      oauthError = params.get("error_description") || params.get("error") || null;
-    }
-
     (async () => {
       try {
         const sb: SupabaseClient = assertSupabase();
 
-        // Force the auth client to (re)process the URL hash on mount. This is
-        // the official public API for the boot race we hit. Without it, an
-        // OAuth fragment that lands while the page is loading can be lost.
-        if (hasOAuthFragment) {
+        // ---------- STEP 1: handle the OAuth hash fragment ----------
+        // main.tsx already calls consumeOAuthHash() BEFORE React mounts and
+        // stashes the parsed tokens on window.__avenu_oauth_tokens so
+        // BrowserRouter never sees the giant access_token fragment. We read
+        // those tokens here and call the public `setSession` API to
+        // establish the session in Supabase's auth client.
+        // (If for any reason main.tsx didn't run — e.g. hot reload — also try
+        //  consumeOAuthHash() here; it's a no-op if the hash is already gone.)
+        const oauthTokens =
+          (window as unknown as { __avenu_oauth_tokens?: { access_token: string; refresh_token: string; provider_token?: string | null; error?: string | null } | null }).__avenu_oauth_tokens ||
+          consumeOAuthHash();
+
+        if (oauthTokens) {
+          if (oauthTokens.error) {
+            setError(oauthTokens.error);
+          } else if (oauthTokens.access_token && oauthTokens.refresh_token) {
+            const { error: setErr } = await sb.auth.setSession({
+              access_token: oauthTokens.access_token,
+              refresh_token: oauthTokens.refresh_token,
+            });
+            if (setErr) setError(setErr.message);
+
+            // Persist provider_token (Google scopes) into user metadata —
+            // best-effort; ignore failures.
+            if (oauthTokens.provider_token) {
+              try {
+                await sb.auth.updateUser({
+                  data: { provider_token: oauthTokens.provider_token },
+                });
+              } catch {
+                /* ignore */
+              }
+            }
+          }
+          // Clear the stash so a future mount (hot reload) doesn't replay it.
           try {
-            const { error: initErr } = await sb.auth.initialize();
-            if (initErr && !oauthError) oauthError = initErr.message;
-          } catch (e) {
-            // initialize() may throw on some patches; fall through to getSession
-            // which will still read whatever was persisted.
-            if (!oauthError) oauthError = e instanceof Error ? e.message : String(e);
+            delete (window as unknown as { __avenu_oauth_tokens?: unknown }).__avenu_oauth_tokens;
+          } catch {
+            /* ignore */
           }
         }
 
-        // Read the now-established session (either from the URL hash via
-        // initialize(), or from localStorage if no hash was present).
+        // ---------- STEP 2: read the now-established session ----------
         const { data, error: err } = await sb.auth.getSession();
         if (cancelled) return;
         if (err) setError(err.message);
-        else if (oauthError) setError(oauthError);
         setSession(data.session);
-
-        // Strip the OAuth fragment from the address bar so the access_token
-        // doesn't sit in history / re-trigger parsing on refresh.
-        if (hasOAuthFragment && typeof window !== "undefined") {
-          try {
-            const cleanURL =
-              window.location.origin + window.location.pathname + window.location.search;
-            window.history.replaceState(null, "", cleanURL);
-          } catch {
-            /* history.replaceState is universally supported; defensive */
-          }
-        }
 
         // Subscribe AFTER the first session resolution so we don't get a
         // redundant INITIAL_SESSION event racing with our own setState.
         const { data: listener } = sb.auth.onAuthStateChange((_event, sess) => {
           setSession(sess);
           setLoading(false);
-          if (!oauthError) setError(null);
+          setError(null);
         });
         sub = listener.subscription;
       } catch (e) {
