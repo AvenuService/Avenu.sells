@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { CatalogProvider } from "./store/CatalogContext";
 import { CartProvider } from "./store/CartContext";
+import { OrdersProvider } from "./store/OrdersContext";
 import { AdminAuthProvider } from "./store/AdminAuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./styles/global.css";
@@ -14,11 +15,13 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
       <CatalogProvider>
-        <CartProvider>
-          <AdminAuthProvider>
-            <App />
-          </AdminAuthProvider>
-        </CartProvider>
+        <OrdersProvider>
+          <CartProvider>
+            <AdminAuthProvider>
+              <App />
+            </AdminAuthProvider>
+          </CartProvider>
+        </OrdersProvider>
       </CatalogProvider>
     </ErrorBoundary>
   </StrictMode>,

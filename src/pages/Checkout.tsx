@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../store/CartContext";
+import { useOrders, generateOrderCode } from "../store/OrdersContext";
 import { formatPrice } from "../data/products";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { ArrowRight, CheckIcon, ShieldIcon, TruckIcon } from "../components/Icons";
@@ -16,10 +17,12 @@ const paymentMethods = ["Card", "Apple Pay", "PayPal", "Affirm"] as const;
 
 export default function Checkout() {
   const { items, subtotal, tax, clear } = useCart();
+  const { createOrder } = useOrders();
   const navigate = useNavigate();
   const [delivery, setDelivery] = useState<Delivery>("standard");
   const [payment, setPayment] = useState<string>("Card");
   const [placed, setPlaced] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const serviceOnly = items.length > 0 && items.every((i) => i.type === "service");
   const deliveryPrice = deliveryOptions.find((d) => d.id === delivery)?.price ?? 0;
@@ -27,12 +30,64 @@ export default function Checkout() {
   const finalShipping = serviceOnly ? 0 : (freeShip ? 0 : deliveryPrice);
   const total = subtotal + finalShipping + tax;
 
-  function placeOrder(e: React.FormEvent) {
+  function readField(id: string): string {
+    const el = formRef.current?.querySelector(`#${id}`) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+    return el?.value?.trim() ?? "";
+  }
+
+  async function placeOrder(e: React.FormEvent) {
     e.preventDefault();
     setPlaced(true);
-    const orderId = "AVN-" + Math.random().toString(36).slice(2, 7).toUpperCase();
-    clear();
-    setTimeout(() => navigate(`/order/${orderId}${items.length ? "" : ""}`), 700);
+
+    const code = generateOrderCode();
+    const email = readField("email");
+    const firstName = readField("firstName");
+    const lastName = readField("lastName");
+    const customerName = [firstName, lastName].filter(Boolean).join(" ") || undefined;
+
+    const brief = serviceOnly
+      ? {
+          projectName: readField("projectName") || undefined,
+          projectType: readField("projectType") || undefined,
+          brief: readField("brief") || undefined,
+          deadline: readField("deadline") || undefined,
+          budget: readField("budget") || undefined,
+        }
+      : null;
+
+    const orderItems = items.map((i) => ({
+      productId: i.productId,
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+      color: i.color,
+      type: i.type,
+    }));
+
+    try {
+      const created = await createOrder({
+        code,
+        status: "new",
+        customerEmail: email || undefined,
+        customerName,
+        items: orderItems,
+        brief,
+        subtotal,
+        shipping: finalShipping,
+        tax,
+        total,
+        currency: "USD",
+      });
+      // Created returns null on failure (logged in context) — we still navigate
+      // so the customer sees a confirmation regardless of backend state.
+      clear();
+      const orderCode = created?.code ?? code;
+      setTimeout(() => navigate(`/order/${orderCode}`), 700);
+    } catch {
+      // Even if order write fails, don't hang the customer. Fall through to confirmation.
+      clear();
+      setTimeout(() => navigate(`/order/${code}`), 700);
+    }
   }
 
   if (items.length === 0 && !placed) {
@@ -67,7 +122,7 @@ export default function Checkout() {
       )}
 
       <div className="checkout-grid">
-        <form onSubmit={placeOrder}>
+        <form onSubmit={placeOrder} ref={formRef}>
           <section className="checkout-section fade-up">
             <h2>Contact</h2>
             <div className="form-grid">

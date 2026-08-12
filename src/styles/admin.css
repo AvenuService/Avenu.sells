@@ -280,3 +280,90 @@
   .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
   .admin-products-actions { flex-wrap: wrap; }
 }
+
+
+/* ============================================================
+   ADMIN ORDERS
+   ============================================================ */
+.admin-orders-list { display: flex; flex-direction: column; gap: 0.85rem; }
+.admin-order-row { padding: 0; overflow: hidden; }
+.admin-order-summary {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  display: grid;
+  grid-template-columns: 110px 1fr 110px 110px 90px 20px;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1.2rem;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  transition: background 0.12s ease;
+}
+.admin-order-summary:hover { background: rgba(193,232,255,0.05); }
+.admin-order-code { font-family: var(--font-display); font-weight: 600; color: var(--accent-ice); letter-spacing: 0.02em; }
+.admin-order-customer { color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-order-status {
+  font-size: 0.74rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 0.3rem 0.6rem; border-radius: var(--radius-pill); border: 1px solid;
+  display: inline-block; text-align: center; justify-self: start;
+}
+.admin-order-total { font-weight: 700; font-family: var(--font-display); }
+.admin-order-time { font-size: 0.8rem; color: var(--text-muted); }
+.admin-order-chevron { color: var(--text-muted); justify-self: end; }
+
+.admin-order-detail {
+  padding: 1rem 1.4rem 1.4rem;
+  border-top: 1px solid var(--border-faint);
+  background: rgba(2, 16, 36, 0.3);
+}
+.admin-order-detail-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; }
+.admin-section-title-small {
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--accent-soft); font-weight: 600; margin: 0 0 0.6rem;
+}
+
+.orders-items { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.orders-items li { display: flex; gap: 0.6rem; align-items: center; font-size: 0.92rem; color: var(--text-secondary); }
+.order-qty { background: rgba(193,232,255,0.10); color: var(--accent-ice); padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; }
+.order-name { color: var(--text-primary); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.order-color { font-size: 0.85rem; }
+.order-price { font-family: var(--font-display); font-weight: 600; color: var(--text-primary); }
+.order-totals { padding-top: 0.6rem; border-top: 1px solid var(--border-faint); display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.88rem; }
+.order-totals .summary-line span:first-child { color: var(--text-muted); }
+.order-totals .summary-total span:first-child { color: var(--text-primary); font-weight: 600; }
+
+.order-brief {
+  padding: 0.9rem 1rem; background: rgba(193, 232, 255, 0.06);
+  border: 1px solid rgba(193, 232, 255, 0.18); border-radius: var(--radius-md);
+  font-size: 0.88rem; color: var(--text-secondary);
+  display: flex; flex-direction: column; gap: 0.3rem;
+}
+.order-brief p { margin: 0; }
+.order-brief strong { color: var(--accent-ice); font-weight: 600; }
+.order-brief-text { margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px dashed var(--border-faint); white-space: pre-wrap; line-height: 1.55; }
+
+.order-status-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.order-status-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  background: rgba(2, 16, 36, 0.5);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.order-status-btn:hover { border-color: var(--accent-soft); color: var(--text-primary); }
+.order-status-btn.active {
+  background: rgba(193, 232, 255, 0.14);
+  border-color: rgba(193, 232, 255, 0.35);
+  color: var(--accent-ice);
+}
+
+@media (max-width: 700px) {
+  .admin-order-summary { grid-template-columns: 1fr; gap: 0.4rem; }
+  .admin-order-detail-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+}

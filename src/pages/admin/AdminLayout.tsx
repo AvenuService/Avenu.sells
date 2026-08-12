@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../store/AdminAuthContext";
 import { useCatalog } from "../../store/CatalogContext";
+import { useOrders } from "../../store/OrdersContext";
 import {
   PlusIcon,
   CloseIcon,
@@ -9,17 +10,21 @@ import {
   ShieldIcon,
   ZapIcon,
   LogoutIcon,
+  CartIcon,
 } from "../../components/Icons";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: ZapIcon, end: true },
   { to: "/admin/products", label: "Products", icon: ShieldIcon, end: false },
   { to: "/admin/products/new", label: "Add product", icon: PlusIcon, end: false },
+  { to: "/admin/orders", label: "Orders", icon: CartIcon, end: false },
 ];
 
 export default function AdminLayout({ children, title, subtitle }: { children: ReactNode; title: string; subtitle?: string }) {
   const { logout, session } = useAdminAuth();
   const { products } = useCatalog();
+  const { orders } = useOrders();
+  const newOrderCount = orders.filter((o) => o.status === "new").length;
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -51,6 +56,9 @@ export default function AdminLayout({ children, title, subtitle }: { children: R
               <n.icon size={18} />
               <span>{n.label}</span>
               {n.label === "Products" && <span className="admin-nav-count">{products.length}</span>}
+              {n.label === "Orders" && newOrderCount > 0 && (
+                <span className="admin-nav-count" style={{ background: "var(--accent-ice)", color: "var(--bg-deep)" }}>{newOrderCount}</span>
+              )}
             </NavLink>
           ))}
         </nav>
