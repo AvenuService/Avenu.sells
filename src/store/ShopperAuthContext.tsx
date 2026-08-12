@@ -56,19 +56,68 @@ export function ShopperAuthProvider({ children }: { children: ReactNode }) {
     let sub: Subscription | null = null;
     let cancelled = false;
 
+    // Detect an OAuth/implicit-grant fragment in the URL hash BEFORE we boot
+    // the auth client. Supabase v2 auto-detects via detectSessionInUrl, but
+    // there's a race if React mounts and reads getSession() before the auth
+    // client has parsed the hash. Explicitly awaiting getSession() forces the
+    // internal _initialize -> _getSessionFromURL path to run first.
+    const hash = typeof window !== "undefined" ? window.location.hash || "" : "";
+    const hasOAuthFragment =
+      hash.includes("access_token=") ||
+      hash.includes("refresh_token=") ||
+      hash.includes("error_description=") ||
+      hash.includes("error=");
+
+    let oauthError: string | null = null;
+    if (hasOAuthFragment) {
+      const params = new URLSearchParams(
+        hash.startsWith("#") ? hash.slice(1) : hash,
+      );
+      oauthError =
+        params.get("error_description") ||
+        params.get("error") ||
+        null;
+    }
+
     (async () => {
       try {
         const sb: SupabaseClient = assertSupabase();
+
+        // Calling getSession() is what triggers the internal _initialize path,
+        // which on a hash-fragment URL parses the OAuth tokens via
+        // _getSessionFromURL and stores them.
         const { data, error: err } = await sb.auth.getSession();
         if (cancelled) return;
-        if (err) setError(err.message);
+
+        if (err) {
+          setError(err.message);
+        } else if (oauthError) {
+          setError(oauthError);
+        }
         setSession(data.session);
 
-        // Subscribe to any auth change (signIn / signOut / token refresh).
+        // If we consumed an OAuth fragment from the URL, strip it from the
+        // address bar NOW so:
+        //   - the access_token doesn't persist in browser history / re-shares,
+        //   - a refresh won't re-trigger parsing (which can log the user out),
+        //   - the user sees a clean URL again.
+        if (hasOAuthFragment && typeof window !== "undefined") {
+          try {
+            const cleanURL =
+              window.location.origin + window.location.pathname + window.location.search;
+            window.history.replaceState(null, "", cleanURL);
+          } catch {
+            /* history.replaceState is guarded in modern browsers; ignore */
+          }
+        }
+
+        // Subscribe AFTER the first session resolution so we don't get a
+        // redundant INITIAL_SESSION event racing with our own setState.
         const { data: listener } = sb.auth.onAuthStateChange((_event, sess) => {
           setSession(sess);
           setLoading(false);
-          setError(null);
+          // Don't clear an explicit OAuth error on a downstream event.
+          if (!oauthError) setError(null);
         });
         sub = listener.subscription;
       } catch (e) {

@@ -29,6 +29,63 @@ function ScrollToTopOnNav() {
   return null;
 }
 
+/**
+ * Strip a Supabase OAuth response fragment (`#access_token=...` etc.) from
+ * the address bar once the session has been processed by ShopperAuthProvider.
+ *
+ * Why: Supabase v2's auth client auto-parses the hash on `_initialize`, but
+ * there's a race if React mounts/upduras before that resolves. By the time
+ * we hit this effect (mounted after providers), the auth client should have
+ * consumed the tokens — we just need to clean the URL.
+ *
+ * We also re-check after a brief delay so an async resolution of the OAuth
+ * fragment is still cleaned if it somehow lands *after* first paint.
+ */
+function OAuthHashCleanup() {
+  useEffect(() => {
+    let rafId = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    function stripIfOAuthFragment() {
+      if (typeof window === "undefined") return;
+      const hash = window.location.hash || "";
+      const isOAuth =
+        hash.includes("access_token=") ||
+        hash.includes("refresh_token=") ||
+        hash.includes("expires_in=") ||
+        hash.includes("token_type=") ||
+        hash.includes("provider_token=") ||
+        hash.includes("error_description=") ||
+        hash.includes("error=");
+      if (!isOAuth) return;
+      try {
+        const cleanURL =
+          window.location.origin +
+          window.location.pathname +
+          window.location.search;
+        window.history.replaceState(null, "", cleanURL);
+      } catch {
+        /* ignore — replaceState is universally supported; this is defensive */
+      }
+    }
+
+    // Initial sweep on mount.
+    stripIfOAuthFragment();
+
+    // Re-sweep a couple ticks later in case the hash was added during the
+    // first paint cycle (rare, but covers the race condition).
+    rafId = window.requestAnimationFrame(stripIfOAuthFragment);
+    timeoutId = setTimeout(stripIfOAuthFragment, 600);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
+
+  return null;
+}
+
 function StorefrontChrome() {
   return (
     <>
@@ -46,6 +103,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTopOnNav />
+      <OAuthHashCleanup />
       <Routes>
         {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
