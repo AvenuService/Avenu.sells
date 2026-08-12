@@ -34,6 +34,18 @@ const OrdersContext = createContext<OrdersContextValue | null>(null);
 const TABLE = "orders";
 const FALLBACK_KEY = "avenu.orders.v1";
 
+// Supabase returns errors as plain objects ({ message, code, details, hint })
+// that are NOT instances of Error — String(err) yields "[object Object]" and
+// we lose the actual message. Normalise anything thrown from a call path.
+function errToMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object" && "message" in e) {
+    const m = (e as { message?: unknown }).message;
+    if (typeof m === "string" && m.trim()) return m;
+  }
+  return typeof e === "string" ? e : "[unknown error]";
+}
+
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
@@ -55,13 +67,13 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         .from(TABLE)
         .select("*")
         .order("created_at", { ascending: false });
-      if (err) throw err;
+      if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
       setOrders((data as unknown as OrderRow[]).map(rowToOrder));
       setStatus("ready");
       setError(null);
     } catch (e) {
       setStatus("error");
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errToMessage(e));
     }
   }, [fallback]);
 
@@ -120,12 +132,12 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
           .insert(insert)
           .select("*")
           .single();
-        if (err) throw err;
+        if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
         const order = rowToOrder(row as unknown as OrderRow);
         setOrders((prev) => [order, ...prev]);
         return order;
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(errToMessage(e));
         return null;
       }
     },
@@ -155,7 +167,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         };
         if (notes !== undefined) patch.notes = notes;
         const { error: err } = await sb.from(TABLE).update(patch).eq("id", id);
-        if (err) throw err;
+        if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
         setOrders((prev) =>
           prev.map((o) =>
             o.id === id ? { ...o, status: newStatus, notes: notes ?? o.notes, updatedAt: Date.now() } : o,
@@ -163,7 +175,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         );
         return true;
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(errToMessage(e));
         return false;
       }
     },

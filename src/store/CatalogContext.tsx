@@ -42,6 +42,18 @@ const TABLE = "products";
 // (lets the storefront still render during setup / offline dev).
 const FALLBACK_KEY = "avenu.catalog.v2";
 
+// Supabase returns errors as plain objects ({ message, code, ... }) that are
+// NOT instances of Error — String(err) yields "[object Object]" and we lose
+// the actual message. Normalise anything thrown from a call path.
+function errToMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object" && "message" in e) {
+    const m = (e as { message?: unknown }).message;
+    if (typeof m === "string" && m.trim()) return m;
+  }
+  return typeof e === "string" ? e : "[unknown error]";
+}
+
 export function CatalogProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [status, setStatus] = useState<CatalogStatus>(supabaseConfigured ? "loading" : "ready");
@@ -66,13 +78,13 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
         .from(TABLE)
         .select("*")
         .order("created_at", { ascending: false });
-      if (err) throw err;
+      if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
       setProducts((data as unknown as ProductRow[]).map(rowToProduct));
       setStatus("ready");
       setError(null);
     } catch (e) {
       setStatus("error");
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errToMessage(e));
     }
   }, [fallback]);
 
@@ -152,13 +164,13 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
           .insert(insert)
           .select("*")
           .single();
-        if (err) throw err;
+        if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
         const product = rowToProduct(row as unknown as ProductRow);
         // optimistic: pre-add so UI updates immediately (realtime will reconcile if needed)
         setProducts((prev) => [product, ...prev.filter((p) => p.id !== product.id)]);
         return product;
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(errToMessage(e));
         return null;
       }
     },
@@ -176,11 +188,11 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
         const sb = assertSupabase();
         const upd = productToUpdate(patch);
         const { error: err } = await sb.from(TABLE).update(upd).eq("id", id);
-        if (err) throw err;
+        if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
         setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
         return true;
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(errToMessage(e));
         return false;
       }
     },
@@ -197,11 +209,11 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       try {
         const sb = assertSupabase();
         const { error: err } = await sb.from(TABLE).delete().eq("id", id);
-        if (err) throw err;
+        if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
         setProducts((prev) => prev.filter((p) => p.id !== id));
         return true;
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(errToMessage(e));
         return false;
       }
     },
