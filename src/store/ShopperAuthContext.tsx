@@ -57,57 +57,64 @@ export function ShopperAuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     // Detect an OAuth/implicit-grant fragment in the URL hash BEFORE we boot
-    // the auth client. Supabase v2 auto-detects via detectSessionInUrl, but
-    // there's a race if React mounts and reads getSession() before the auth
-    // client has parsed the hash. Explicitly awaiting getSession() forces the
-    // internal _initialize -> _getSessionFromURL path to run first.
+    // the auth client. Supabase v2's auto-detect (detectSessionInUrl: true)
+    // only runs on the FIRST _initialize() call — and the client is eagerly
+    // constructed in supabaseClient.ts at module load, so that init may have
+    // already fired before this effect. Calling sb.auth.initialize() here
+    // RE-RUNS the URL detection path (in v2.45 it's idempotent — guarded by
+    // an internal `initializePromise`), so any hash fragment still sitting
+    // in the URL gets parsed into a session this render.
     const hash = typeof window !== "undefined" ? window.location.hash || "" : "";
     const hasOAuthFragment =
       hash.includes("access_token=") ||
       hash.includes("refresh_token=") ||
+      hash.includes("expires_in=") ||
+      hash.includes("token_type=") ||
+      hash.includes("provider_token=") ||
       hash.includes("error_description=") ||
       hash.includes("error=");
 
     let oauthError: string | null = null;
     if (hasOAuthFragment) {
-      const params = new URLSearchParams(
-        hash.startsWith("#") ? hash.slice(1) : hash,
-      );
-      oauthError =
-        params.get("error_description") ||
-        params.get("error") ||
-        null;
+      const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+      oauthError = params.get("error_description") || params.get("error") || null;
     }
 
     (async () => {
       try {
         const sb: SupabaseClient = assertSupabase();
 
-        // Calling getSession() is what triggers the internal _initialize path,
-        // which on a hash-fragment URL parses the OAuth tokens via
-        // _getSessionFromURL and stores them.
+        // Force the auth client to (re)process the URL hash on mount. This is
+        // the official public API for the boot race we hit. Without it, an
+        // OAuth fragment that lands while the page is loading can be lost.
+        if (hasOAuthFragment) {
+          try {
+            const { error: initErr } = await sb.auth.initialize();
+            if (initErr && !oauthError) oauthError = initErr.message;
+          } catch (e) {
+            // initialize() may throw on some patches; fall through to getSession
+            // which will still read whatever was persisted.
+            if (!oauthError) oauthError = e instanceof Error ? e.message : String(e);
+          }
+        }
+
+        // Read the now-established session (either from the URL hash via
+        // initialize(), or from localStorage if no hash was present).
         const { data, error: err } = await sb.auth.getSession();
         if (cancelled) return;
-
-        if (err) {
-          setError(err.message);
-        } else if (oauthError) {
-          setError(oauthError);
-        }
+        if (err) setError(err.message);
+        else if (oauthError) setError(oauthError);
         setSession(data.session);
 
-        // If we consumed an OAuth fragment from the URL, strip it from the
-        // address bar NOW so:
-        //   - the access_token doesn't persist in browser history / re-shares,
-        //   - a refresh won't re-trigger parsing (which can log the user out),
-        //   - the user sees a clean URL again.
+        // Strip the OAuth fragment from the address bar so the access_token
+        // doesn't sit in history / re-trigger parsing on refresh.
         if (hasOAuthFragment && typeof window !== "undefined") {
           try {
             const cleanURL =
               window.location.origin + window.location.pathname + window.location.search;
             window.history.replaceState(null, "", cleanURL);
           } catch {
-            /* history.replaceState is guarded in modern browsers; ignore */
+            /* history.replaceState is universally supported; defensive */
           }
         }
 
@@ -116,14 +123,11 @@ export function ShopperAuthProvider({ children }: { children: ReactNode }) {
         const { data: listener } = sb.auth.onAuthStateChange((_event, sess) => {
           setSession(sess);
           setLoading(false);
-          // Don't clear an explicit OAuth error on a downstream event.
           if (!oauthError) setError(null);
         });
         sub = listener.subscription;
       } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : String(e));
-        }
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       } finally {
         if (!cancelled) setLoading(false);
       }
