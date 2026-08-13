@@ -24,6 +24,7 @@ const DEFAULT_PREFS: CookiePreferences = {
    ============================================================ */
 function Cookie3DCanvas({ exiting }: { exiting: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [webglFailed, setWebglFailed] = useState(false);
   const exitRef = useRef(exiting);
   exitRef.current = exiting;
 
@@ -37,13 +38,19 @@ function Cookie3DCanvas({ exiting }: { exiting: boolean }) {
     const width = parent.clientWidth || 240;
     const height = parent.clientHeight || 200;
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: "low-power",
+      });
+    } catch {
+      setWebglFailed(true);
+      return;
+    }
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(width, height);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
@@ -325,6 +332,25 @@ function Cookie3DCanvas({ exiting }: { exiting: boolean }) {
       }
     };
   }, []);
+
+  if (webglFailed) {
+    return (
+      <div
+        style={{
+          width: "120px",
+          height: "120px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "4rem",
+          flexShrink: 0,
+          filter: "drop-shadow(0 10px 20px rgba(56,189,248,0.3))",
+        }}
+      >
+        🍪
+      </div>
+    );
+  }
 
   return (
     <div

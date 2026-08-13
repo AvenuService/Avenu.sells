@@ -432,67 +432,72 @@ export default function Scene3D() {
       scene.add(fillLight);
 
       /* ============================================================
-         Post-processing — render → bloom → SMAA → vignette/CA → output
+         Post-processing — enabled for desktop; direct render for mobile
+         for instant load times and zero frame stutter
          ============================================================ */
-      const composer = new EffectComposer(renderer);
-      composer.setPixelRatio(pixelRatio);
-      composer.setSize(size(), hsize());
-      composer.addPass(new RenderPass(scene, camera));
+      const usePostProcessing = !isMobile && !prefersReduced;
+      let composer: EffectComposer | null = null;
+      let bloom: UnrealBloomPass | null = null;
+      let fxPass: ShaderPass | null = null;
 
-      const bloom = new UnrealBloomPass(
-        new THREE.Vector2(size(), hsize()),
-        0.28, // strength (toned down from bright glare)
-        0.4, // radius
-        0.52, // threshold
-      );
-      composer.addPass(bloom);
+      if (usePostProcessing) {
+        composer = new EffectComposer(renderer);
+        composer.setPixelRatio(pixelRatio);
+        composer.setSize(size(), hsize());
+        composer.addPass(new RenderPass(scene, camera));
 
-      // Subtle vignette + chromatic aberration for holographic depth
-      const fxPass = new ShaderPass({
-        uniforms: {
-          tDiffuse: { value: null },
-          uVignette: { value: 0.85 },
-          uCA: { value: 0.0018 },
-          uReveal: { value: 1.0 },
-        },
-        vertexShader: /* glsl */ `
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: /* glsl */ `
-          precision highp float;
-          uniform sampler2D tDiffuse;
-          uniform float uVignette;
-          uniform float uCA;
-          uniform float uReveal;
-          varying vec2 vUv;
+        bloom = new UnrealBloomPass(
+          new THREE.Vector2(size(), hsize()),
+          0.28,
+          0.4,
+          0.52,
+        );
+        composer.addPass(bloom);
 
-          void main() {
-            vec2 uv = vUv;
-            vec2 d = uv - 0.5;
-            float r2 = dot(d, d);
-            // radial chromatic aberration
-            vec2 ofs = d * uCA * (1.0 + r2 * 2.0);
-            vec3 col;
-            col.r = texture2D(tDiffuse, uv + ofs).r;
-            col.g = texture2D(tDiffuse, uv).g;
-            col.b = texture2D(tDiffuse, uv - ofs).b;
-            // vignette
-            float vig = 1.0 - r2 * uVignette * 1.1;
-            col *= clamp(vig, 0.0, 1.0);
-            col *= mix(0.6, 1.0, uReveal);
-            gl_FragColor = vec4(col, 1.0);
-          }
-        `,
-      });
-      composer.addPass(fxPass);
+        fxPass = new ShaderPass({
+          uniforms: {
+            tDiffuse: { value: null },
+            uVignette: { value: 0.85 },
+            uCA: { value: 0.0018 },
+            uReveal: { value: 1.0 },
+          },
+          vertexShader: /* glsl */ `
+            varying vec2 vUv;
+            void main() {
+              vUv = uv;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: /* glsl */ `
+            precision highp float;
+            uniform sampler2D tDiffuse;
+            uniform float uVignette;
+            uniform float uCA;
+            uniform float uReveal;
+            varying vec2 vUv;
 
-      const smaa = new SMAAPass();
-      composer.addPass(smaa);
-      composer.addPass(new OutputPass());
+            void main() {
+              vec2 uv = vUv;
+              vec2 d = uv - 0.5;
+              float r2 = dot(d, d);
+              vec2 ofs = d * uCA * (1.0 + r2 * 2.0);
+              vec3 col;
+              col.r = texture2D(tDiffuse, uv + ofs).r;
+              col.g = texture2D(tDiffuse, uv).g;
+              col.b = texture2D(tDiffuse, uv - ofs).b;
+              float vig = 1.0 - r2 * uVignette * 1.1;
+              col *= clamp(vig, 0.0, 1.0);
+              col *= mix(0.6, 1.0, uReveal);
+              gl_FragColor = vec4(col, 1.0);
+            }
+          `,
+        });
+        composer.addPass(fxPass);
+
+        const smaa = new SMAAPass();
+        composer.addPass(smaa);
+        composer.addPass(new OutputPass());
+      }
 
       /* ============================================================
          Input — mouse parallax + scroll progress
@@ -545,7 +550,7 @@ export default function Scene3D() {
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
-        composer.setSize(w, h);
+        if (composer) composer.setSize(w, h);
       }
       window.addEventListener("resize", onResize);
 
@@ -619,14 +624,18 @@ export default function Scene3D() {
         // Reveal-fade based on scroll distance
         crystalMat.uniforms.uReveal.value = reveal;
         pMat.uniforms.uReveal.value = reveal;
-        fxPass.uniforms.uReveal.value = reveal;
+        if (fxPass) fxPass.uniforms.uReveal.value = reveal;
 
-        // Time uniforms + bloom strength grows slightly with scroll
+        // Time uniforms + bloom strength
         crystalMat.uniforms.uTime.value = t;
         pMat.uniforms.uTime.value = t;
-        bloom.strength = 0.25 + scrollProgress * 0.25;
+        if (bloom) bloom.strength = 0.25 + scrollProgress * 0.25;
 
-        composer.render();
+        if (composer) {
+          composer.render();
+        } else {
+          renderer.render(scene, camera);
+        }
       }
       tick();
 
@@ -669,7 +678,7 @@ export default function Scene3D() {
           window.removeEventListener("resize", onResize);
           canvas.removeEventListener("webglcontextlost", onContextLost, false);
           canvas.removeEventListener("webglcontextrestored", onContextRestored, false);
-          composer.dispose();
+          if (composer) composer.dispose();
           for (const g of allGeos) disposeGeo(g);
           for (const m of allMats) disposeMat(m);
           envTex.dispose();
