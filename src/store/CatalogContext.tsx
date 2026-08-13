@@ -65,28 +65,55 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     initialProducts,
   );
   const subStarted = useRef(false);
-
   const loadFromSupabase = useCallback(async () => {
     if (!supabaseConfigured) {
       setProducts(fallback);
       setStatus("ready");
       return;
     }
+
+    // Set fallback initial products immediately so UI is instant (0ms delay)
+    if (products.length === 0) {
+      setProducts(fallback);
+      setStatus("ready");
+    }
+
     try {
       const sb = assertSupabase();
-      const { data, error: err } = await sb
+      // Promise race with 3.5s timeout so site never hangs on slow database connection
+      const queryPromise = sb
         .from(TABLE)
         .select("*")
         .order("created_at", { ascending: false });
-      if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
-      setProducts((data as unknown as ProductRow[]).map(rowToProduct));
+
+      const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+        setTimeout(
+          () => resolve({ data: null, error: { message: "Database request timed out — using cached catalog" } }),
+          3500,
+        ),
+      );
+
+      const res = await Promise.race([queryPromise, timeoutPromise]);
+      const { data, error: err } = res;
+
+      if (err) {
+        // If query failed or timed out, keep showing fallback products
+        if (products.length === 0) setProducts(fallback);
+        setStatus("ready");
+        return;
+      }
+
+      if (data && Array.isArray(data) && data.length > 0) {
+        setProducts((data as unknown as ProductRow[]).map(rowToProduct));
+      }
       setStatus("ready");
       setError(null);
     } catch (e) {
-      setStatus("error");
+      if (products.length === 0) setProducts(fallback);
+      setStatus("ready");
       setError(errToMessage(e));
     }
-  }, [fallback]);
+  }, [fallback, products.length]);
 
   // Initial mount: load + subscribe to realtime
   useEffect(() => {
