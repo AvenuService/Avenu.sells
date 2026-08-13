@@ -41,7 +41,7 @@ const ShopperAuthContext = createContext<ShopperAuthContextValue | null>(null);
 // `VITE_AUTH_REDIRECT_URL` forces a stable production URL regardless of
 // which deploy the user is currently on. Set it in .env.local for dev and
 // in the Vercel project env vars for production.
-const PROD_REDIRECT_BASE = "https://wwww.avenu.sale";
+const PROD_REDIRECT_BASE = "https://www.avenu.sale";
 const AUTH_REDIRECT_PATH = "/checkout";
 
 function resolveRedirectBase(): string {
@@ -116,19 +116,25 @@ export function ShopperAuthProvider({ children }: { children: ReactNode }) {
     }
     let sub: Subscription | null = null;
     let cancelled = false;
+    let resolved = false;
+
+    // SAFETY NET: if getSession() hangs (slow network, ad-blocker, corrupted
+    // localStorage) OR onAuthStateChange never fires an initial event, force
+    // loading=false after 4s so the UI unblocks instead of spinning forever.
+    // This was the #1 cause of "site keeps loading" — Checkout & AccountDrawer
+    // both gate on `authLoading` and would render nothing indefinitely.
+    const safetyTimer = window.setTimeout(() => {
+      if (!resolved && !cancelled) {
+        resolved = true;
+        setLoading(false);
+      }
+    }, 4000);
 
     (async () => {
       try {
         const sb: SupabaseClient = assertSupabase();
 
         // ---------- STEP 1: handle the OAuth hash fragment ----------
-        // main.tsx already calls consumeOAuthHash() BEFORE React mounts and
-        // stashes the parsed tokens on window.__avenu_oauth_tokens so
-        // BrowserRouter never sees the giant access_token fragment. We read
-        // those tokens here and call the public `setSession` API to
-        // establish the session in Supabase's auth client.
-        // (If for any reason main.tsx didn't run — e.g. hot reload — also try
-        //  consumeOAuthHash() here; it's a no-op if the hash is already gone.)
         const oauthTokens =
           (window as unknown as { __avenu_oauth_tokens?: { access_token: string; refresh_token: string; provider_token?: string | null; error?: string | null } | null }).__avenu_oauth_tokens ||
           consumeOAuthHash();
@@ -143,8 +149,6 @@ export function ShopperAuthProvider({ children }: { children: ReactNode }) {
             });
             if (setErr) setError(setErr.message);
 
-            // Persist provider_token (Google scopes) into user metadata —
-            // best-effort; ignore failures.
             if (oauthTokens.provider_token) {
               try {
                 await sb.auth.updateUser({
@@ -155,7 +159,6 @@ export function ShopperAuthProvider({ children }: { children: ReactNode }) {
               }
             }
           }
-          // Clear the stash so a future mount (hot reload) doesn't replay it.
           try {
             delete (window as unknown as { __avenu_oauth_tokens?: unknown }).__avenu_oauth_tokens;
           } catch {
@@ -164,28 +167,55 @@ export function ShopperAuthProvider({ children }: { children: ReactNode }) {
         }
 
         // ---------- STEP 2: read the now-established session ----------
-        const { data, error: err } = await sb.auth.getSession();
+        // Race getSession() against a 3s timeout so we NEVER hang indefinitely.
+        const sessionPromise = sb.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: Session | null }; error: null }>((resolve) =>
+          setTimeout(
+            () => resolve({ data: { session: null }, error: null }),
+            3000,
+          ),
+        );
+        const { data, error: err } = await Promise.race([sessionPromise, timeoutPromise]);
+
         if (cancelled) return;
         if (err) setError(err.message);
         setSession(data.session);
 
-        // Subscribe AFTER the first session resolution so we don't get a
-        // redundant INITIAL_SESSION event racing with our own setState.
+        // Subscribe AFTER the first session resolution
         const { data: listener } = sb.auth.onAuthStateChange((_event, sess) => {
           setSession(sess);
+          if (!resolved) {
+            resolved = true;
+            window.clearTimeout(safetyTimer);
+          }
           setLoading(false);
           setError(null);
         });
         sub = listener.subscription;
+
+        // Mark resolved + clear safety timer — if we got here, getSession()
+        // returned on its own.
+        if (!resolved) {
+          resolved = true;
+          window.clearTimeout(safetyTimer);
+        }
+        setLoading(false);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          if (!resolved) {
+            resolved = true;
+            window.clearTimeout(safetyTimer);
+          }
+          setLoading(false);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
+      window.clearTimeout(safetyTimer);
       sub?.unsubscribe();
     };
   }, []);
