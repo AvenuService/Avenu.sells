@@ -41,7 +41,7 @@ const ShopperAuthContext = createContext<ShopperAuthContextValue | null>(null);
 // `VITE_AUTH_REDIRECT_URL` forces a stable production URL regardless of
 // which deploy the user is currently on. Set it in .env.local for dev and
 // in the Vercel project env vars for production.
-const PROD_REDIRECT_BASE = "https://avenu.sale";
+const PROD_REDIRECT_BASE = "https://wwww.avenu.sale";
 const AUTH_REDIRECT_PATH = "/checkout";
 
 function resolveRedirectBase(): string {
