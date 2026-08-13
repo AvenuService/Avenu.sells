@@ -30,12 +30,32 @@ type ShopperAuthContextValue = {
 
 const ShopperAuthContext = createContext<ShopperAuthContextValue | null>(null);
 
-// Where we land after the OAuth redirect round-trip. Origin + /checkout so
-// the cart (still in localStorage) is sitting right where they left it.
-const redirectURL = () =>
-  typeof window !== "undefined"
-    ? `${window.location.origin}/checkout`
-    : undefined;
+// ---- OAuth redirect URL resolution ----
+// Priority: explicit env override → hardcoded production domain → current
+// window.origin (last-resort, dev/preview only).
+//
+// Why the env wins: the Vercel↔Supabase integration auto-syncs preview
+// deployment URLs (`*.vercel.app`) into the Supabase Auth redirect
+// whitelist, which means `window.location.origin` on a preview deploy would
+// produce a URL Supabase accepts but bounces back to a throwaway host.
+// `VITE_AUTH_REDIRECT_URL` forces a stable production URL regardless of
+// which deploy the user is currently on. Set it in .env.local for dev and
+// in the Vercel project env vars for production.
+const PROD_REDIRECT_BASE = "https://avenu.sale";
+const AUTH_REDIRECT_PATH = "/checkout";
+
+function resolveRedirectBase(): string {
+  if (typeof window === "undefined") return PROD_REDIRECT_BASE;
+  const env =
+    (import.meta.env.VITE_AUTH_REDIRECT_URL as string | undefined) ||
+    (import.meta.env.VITE_SITE_URL as string | undefined);
+  if (env && /^https?:\/\//.test(env)) return env.replace(/\/$/, "");
+  // LAST resort: current origin. Only fires if env not set at all — which on
+  // production we always set, so this only affects local dev.
+  return window.location.origin;
+}
+
+const redirectURL = () => `${resolveRedirectBase()}${AUTH_REDIRECT_PATH}`;
 
 // The username lives in user.user_metadata. We also persist a display fullName.
 // These are the keys we keep consistent across user_metadata updates.
