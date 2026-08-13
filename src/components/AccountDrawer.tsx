@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useShopperAuth, displayName, displayUsername, avatarUrl } from "../store/ShopperAuthContext";
 import { CloseIcon, EditIcon, LogoutIcon, ShieldIcon, UserIcon, GoogleIcon, CheckIcon } from "./Icons";
+import CookieModel3D from "./CookieModel3D";
 
 export default function AccountDrawer() {
   const {
@@ -180,7 +181,43 @@ export default function AccountDrawer() {
                   <small className="muted">Lowercase handle. Shown on your orders and account.</small>
                 </div>
 
-                <div className="af-row">
+                {/* 3D Cookie Model - Premium Profile Touch */}
+                <div
+                  style={{
+                    marginTop: "1.2rem",
+                    padding: "1rem",
+                    background: "rgba(56, 189, 248, 0.08)",
+                    border: "1px solid rgba(56, 189, 248, 0.2)",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <p
+                    className="admin-section-title-small"
+                    style={{
+                      marginBottom: "0.8rem",
+                      marginTop: 0,
+                      color: "rgba(226, 232, 240, 0.9)",
+                    }}
+                  >
+                    Your Cookie
+                  </p>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "300px",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      background: "radial-gradient(circle, rgba(15,23,42,0.4) 0%, rgba(10,15,29,0.8) 100%)",
+                    }}
+                  >
+                    <CookieModel3D />
+                  </div>
+                  <p style={{ margin: "0.8rem 0 0", fontSize: "0.75rem", color: "rgba(148, 163, 184, 0.9)" }}>
+                    🍪 A freshly baked cookie just for you. Customize your profile to earn more!
+                  </p>
+                </div>
+
+                <div className="af-row" style={{ marginTop: "1rem" }}>
                   <button
                     type="submit"
                     className="btn btn-primary"
