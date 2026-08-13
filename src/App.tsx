@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import CartDrawer from "./components/CartDrawer";
 import AccountDrawer from "./components/AccountDrawer";
 import AddedToast from "./components/AddedToast";
+import CookieConsent from "./components/CookieConsent";
 import AdminGuard from "./components/AdminGuard";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -131,6 +132,7 @@ export default function App() {
       <CartDrawer />
       <AccountDrawer />
       <AddedToast />
+      <CookieConsent />
       <BackToTop />
     </BrowserRouter>
   );

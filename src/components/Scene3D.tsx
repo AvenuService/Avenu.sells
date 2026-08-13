@@ -9,11 +9,11 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 
 type SceneHandle = { dispose: () => void };
 
-const ICE_TOP = new THREE.Color(0x9fd8ff);
-const ICE_MID = new THREE.Color(0x0a3568);
-const ICE_BOT = new THREE.Color(0xc1e8ff);
+const ICE_TOP = new THREE.Color(0x4a82b8);
+const ICE_MID = new THREE.Color(0x0a2240);
+const ICE_BOT = new THREE.Color(0x629ad0);
 
-const PARTICLE_COUNT = 1400;
+const PARTICLE_COUNT = 700;
 
 function errToMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -77,11 +77,11 @@ export default function Scene3D() {
       renderer.setSize(size(), hsize());
       renderer.setClearColor(0x000000, 0);
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.08;
+      renderer.toneMappingExposure = 0.72;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
 
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x021024, 0.045);
+      scene.fog = new THREE.FogExp2(0x020a16, 0.05);
 
       const camera = new THREE.PerspectiveCamera(
         42,
@@ -103,16 +103,16 @@ export default function Scene3D() {
       cnv.height = 256;
       const cx = cnv.getContext("2d")!;
       const grad = cx.createLinearGradient(0, 0, 0, 256);
-      grad.addColorStop(0.0, "#d6efff");
-      grad.addColorStop(0.35, "#9fd8ff");
-      grad.addColorStop(0.5, "#3f74a8");
-      grad.addColorStop(0.52, "#0a3568");
-      grad.addColorStop(0.75, "#061a3c");
-      grad.addColorStop(1.0, "#021024");
+      grad.addColorStop(0.0, "#1e3a58");
+      grad.addColorStop(0.35, "#132742");
+      grad.addColorStop(0.5, "#0b1b30");
+      grad.addColorStop(0.52, "#061224");
+      grad.addColorStop(0.75, "#030a18");
+      grad.addColorStop(1.0, "#01050e");
       cx.fillStyle = grad;
       cx.fillRect(0, 0, 16, 256);
       cx.globalCompositeOperation = "lighter";
-      cx.fillStyle = "rgba(193, 232, 255, 0.35)";
+      cx.fillStyle = "rgba(120, 180, 230, 0.15)";
       cx.fillRect(0, 124, 16, 8);
       cx.globalCompositeOperation = "source-over";
       const envTex = new THREE.CanvasTexture(cnv);
@@ -344,8 +344,8 @@ export default function Scene3D() {
         pSeed[i * 3] = x;
         pSeed[i * 3 + 1] = y;
         pSeed[i * 3 + 2] = z;
-        pAlpha[i] = 0.15 + Math.random() * 0.7;
-        pSize[i] = 8.0 + Math.random() * 26.0;
+        pAlpha[i] = 0.05 + Math.random() * 0.25;
+        pSize[i] = 6.0 + Math.random() * 18.0;
       }
       pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
       pGeo.setAttribute("aSeed", new THREE.BufferAttribute(pSeed, 3));
@@ -420,14 +420,14 @@ export default function Scene3D() {
       /* ============================================================
          Lighting — key + rim + fill + soft hemispheric upwash
          ============================================================ */
-      scene.add(new THREE.HemisphereLight(0x9fd8ff, 0x021024, 0.35));
-      const keyLight = new THREE.DirectionalLight(0xc1e8ff, 1.5);
+      scene.add(new THREE.HemisphereLight(0x4a82b8, 0x01050e, 0.25));
+      const keyLight = new THREE.DirectionalLight(0xa5d4ff, 0.65);
       keyLight.position.set(3, 4.5, 5);
       scene.add(keyLight);
-      const rimLight = new THREE.DirectionalLight(0x5483b3, 0.85);
+      const rimLight = new THREE.DirectionalLight(0x38618c, 0.4);
       rimLight.position.set(-4, -2, -3);
       scene.add(rimLight);
-      const fillLight = new THREE.PointLight(0xc1e8ff, 1.4, 16, 1.6);
+      const fillLight = new THREE.PointLight(0x7fb8eb, 0.5, 16, 1.8);
       fillLight.position.set(0, 0, 3.2);
       scene.add(fillLight);
 
@@ -441,9 +441,9 @@ export default function Scene3D() {
 
       const bloom = new UnrealBloomPass(
         new THREE.Vector2(size(), hsize()),
-        0.78, // strength
-        0.6, // radius
-        0.18, // threshold
+        0.28, // strength (toned down from bright glare)
+        0.4, // radius
+        0.52, // threshold
       );
       composer.addPass(bloom);
 
@@ -624,7 +624,7 @@ export default function Scene3D() {
         // Time uniforms + bloom strength grows slightly with scroll
         crystalMat.uniforms.uTime.value = t;
         pMat.uniforms.uTime.value = t;
-        bloom.strength = 0.65 + scrollProgress * 0.55;
+        bloom.strength = 0.25 + scrollProgress * 0.25;
 
         composer.render();
       }
