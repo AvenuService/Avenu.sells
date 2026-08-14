@@ -1,23 +1,26 @@
-import { lazy, Suspense } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import HeroBackground from "./HeroBackground";
 
 /* ============================================================
-   SplineBackground — subtle 3D hero backdrop via @splinetool/react-spline.
+   SplineBackground — 3D hero backdrop via @splinetool/react-spline.
 
-   To enable: paste your Spline scene URL below, or set
-   VITE_SPLINE_SCENE_URL in .env.local. When no scene is configured
-   (or none can load) we gracefully fall back to the lightweight CSS
-   aurora so the page always looks complete.
+   Config: set VITE_SPLINE_SCENE_URL (the .splinecode file URL,
+   e.g. https://my.spline.design/<name>-<id>/scene.splinecode).
 
-   Performance — deliberately lazy:
-   Spline's runtime is heavy (physics, splatting, ...). It is imported
-   with React.lazy so it ships as its own on-demand chunks and NEVER
-   loads when no scene URL is configured. The main bundle stays light.
-
-   Design rule — subtle, never overwhelming:
-   - fixed full-viewport layer behind the content (z-index 0)
-   - pointer-events: none (won't steal scroll or clicks)
-   - edge-masked so text stays readable
+   SAFETY — this decoration can never crash the site:
+   - Wrapped in a local ErrorBoundary → on render/load errors it
+     swaps to the CSS aurora instead of bubbling up.
+   - If the scene hasn't finished loading within 12s, we fall back
+     to the aurora too (prevents a hung/blank page).
+   - Lazy-loaded so it never slows the critical bundle.
    ============================================================ */
 
 const SplineScene = lazy(() => import("@splinetool/react-spline"));
@@ -25,17 +28,57 @@ const SplineScene = lazy(() => import("@splinetool/react-spline"));
 const SPLINE_SCENE_URL =
   (import.meta.env.VITE_SPLINE_SCENE_URL as string | undefined)?.trim() || "";
 
+const LOAD_TIMEOUT_MS = 12000;
+
+class SplineErrorBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    // Never let a decorative background take down the storefront.
+    console.warn("[SplineBackground] scene failed, using aurora fallback:", error);
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
 export default function SplineBackground() {
-  if (!SPLINE_SCENE_URL) {
-    // No scene configured yet — keep the safe aurora backdrop.
+  const [timedOut, setTimedOut] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!SPLINE_SCENE_URL) return;
+    timerRef.current = setTimeout(() => setTimedOut(true), LOAD_TIMEOUT_MS);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const handleLoad = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
+  if (!SPLINE_SCENE_URL || timedOut) {
+    // Not configured, or scene too slow/broken → safe CSS backdrop.
     return <HeroBackground />;
   }
 
   return (
     <div className="spline-bg" aria-hidden="true">
-      <Suspense fallback={<HeroBackground />}>
-        <SplineScene scene={SPLINE_SCENE_URL} />
-      </Suspense>
+      <SplineErrorBoundary fallback={<HeroBackground />}>
+        <Suspense fallback={<HeroBackground />}>
+          <SplineScene scene={SPLINE_SCENE_URL} onLoad={handleLoad} />
+        </Suspense>
+      </SplineErrorBoundary>
     </div>
   );
 }
