@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { useShopperAuth, displayName, displayUsername, avatarUrl } from "../store/ShopperAuthContext";
 import { CloseIcon, EditIcon, LogoutIcon, ShieldIcon, UserIcon, GoogleIcon, CheckIcon } from "./Icons";
 import CookieModel3D from "./CookieModel3D";
+import {
+  getCookiePreferences,
+  applyConsent,
+  type CookiePreferences,
+} from "./CookieConsent";
 
 export default function AccountDrawer() {
   const {
@@ -71,6 +76,32 @@ export default function AccountDrawer() {
   const email = user?.email ?? "";
   const avatar = avatarUrl(session);
   const name = displayName(session);
+
+  // Cookie preference controls (moved here from the consent banner).
+  const [cookiePrefs, setCookiePrefs] = useState<CookiePreferences>(getCookiePreferences);
+  const [cookieSaved, setCookieSaved] = useState(false);
+
+  function handleCookieToggle(key: keyof CookiePreferences) {
+    setCookiePrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function handleSaveCookies() {
+    applyConsent(cookiePrefs);
+    setCookieSaved(true);
+    setTimeout(() => setCookieSaved(false), 1800);
+  }
+
+  const cookieOptStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "0.85rem",
+    padding: "0.85rem",
+    background: "rgba(255,255,255,0.03)",
+    borderRadius: "12px",
+    border: "1px solid rgba(255,255,255,0.06)",
+    cursor: "pointer",
+    margin: "0 0 0.5rem",
+  };
 
   return (
     <div className={`account-drawer ${isOpen ? "open" : ""}`} aria-hidden={!isOpen}>
@@ -244,6 +275,87 @@ export default function AccountDrawer() {
                 )}
               </div>
             </form>
+
+            {/* Cookie & privacy preferences — moved here from the consent banner */}
+            <div
+              style={{
+                marginTop: "1.2rem",
+                padding: "1rem",
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: "12px",
+              }}
+            >
+              <p className="admin-section-title-small" style={{ marginBottom: "0.6rem", marginTop: 0 }}>
+                Cookie & privacy preferences
+              </p>
+
+              <label style={cookieOptStyle}>
+                <input type="checkbox" checked disabled className="cookie-check" />
+                <div>
+                  <strong style={{ fontSize: "0.9rem", color: "#f1f5f9" }}>Essential cookies</strong>
+                  <p className="muted" style={{ margin: "0.2rem 0 0", fontSize: "0.78rem" }}>
+                    Required for security sessions and core functionality. Always on.
+                  </p>
+                </div>
+              </label>
+
+              <label style={cookieOptStyle}>
+                <input
+                  type="checkbox"
+                  className="cookie-check"
+                  checked={cookiePrefs.persistentAuth}
+                  onChange={() => handleCookieToggle("persistentAuth")}
+                />
+                <div>
+                  <strong style={{ fontSize: "0.9rem", color: "#f1f5f9" }}>Keep me signed in</strong>
+                  <p className="muted" style={{ margin: "0.2rem 0 0", fontSize: "0.78rem" }}>
+                    Persists your login across browser restarts.
+                  </p>
+                </div>
+              </label>
+
+              <label style={cookieOptStyle}>
+                <input
+                  type="checkbox"
+                  className="cookie-check"
+                  checked={cookiePrefs.cartState}
+                  onChange={() => handleCookieToggle("cartState")}
+                />
+                <div>
+                  <strong style={{ fontSize: "0.9rem", color: "#f1f5f9" }}>Cart & storefront state</strong>
+                  <p className="muted" style={{ margin: "0.2rem 0 0", fontSize: "0.78rem" }}>
+                    Remembers your cart, coupons, and recent view history.
+                  </p>
+                </div>
+              </label>
+
+              <label style={cookieOptStyle}>
+                <input
+                  type="checkbox"
+                  className="cookie-check"
+                  checked={cookiePrefs.analytics}
+                  onChange={() => handleCookieToggle("analytics")}
+                />
+                <div>
+                  <strong style={{ fontSize: "0.9rem", color: "#f1f5f9" }}>Graphics & performance</strong>
+                  <p className="muted" style={{ margin: "0.2rem 0 0", fontSize: "0.78rem" }}>
+                    Adapts 3D background effects based on your hardware.
+                  </p>
+                </div>
+              </label>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "1rem" }}>
+                <button type="button" className="btn btn-primary" onClick={handleSaveCookies}>
+                  Save preferences
+                </button>
+                {cookieSaved && (
+                  <span className="af-saved">
+                    <CheckIcon size={14} /> Saved
+                  </span>
+                )}
+              </div>
+            </div>
 
             <footer className="account-foot">
               <div className="account-session-summary">
