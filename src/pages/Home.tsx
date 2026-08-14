@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { useCatalog } from "../store/CatalogContext";
 import ProductCard from "../components/ProductCard";
 import SplineBackground from "../components/SplineBackground";
-import CookieCallout from "../components/CookieCallout";
 import { LoadingGrid } from "../components/Loading";
 import { ArrowRight, ShieldIcon, SwapIcon, SparkIcon, ZapIcon } from "../components/Icons";
 
@@ -32,7 +31,6 @@ export default function Home() {
     <>
       {/* Fixed full-viewport background — Spline 3D scene (falls back to CSS aurora when unconfigured) */}
       <SplineBackground />
-      <CookieCallout />
 
       <div className="home-content">
       {/* HERO */}
@@ -61,7 +59,7 @@ export default function Home() {
           <div className="hero-visual hero-visual-3d" aria-hidden="true">
             {/* The 3D crystal lives in the fixed background layer; this slot is now a transparent
                 opening where it shines through. The hv-chip still labels the hero. */}
-            <div className="hv-chip" style={{ zIndex: 10 }}><span className="pip" /><strong>Live</strong> · icy aurora</div>
+            <div className="hv-chip" style={{ zIndex: 10 }}><span className="pip" /><strong>Live</strong> · 3D motion</div>
           </div>
         </div>
       </section>
