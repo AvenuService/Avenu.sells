@@ -6,6 +6,7 @@ import AccountDrawer from "./components/AccountDrawer";
 import AddedToast from "./components/AddedToast";
 import CookieConsent from "./components/CookieConsent";
 import AdminGuard from "./components/AdminGuard";
+import { AppDiagnostic } from "./components/AppDiagnostic";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BackToTop from "./components/BackToTop";
@@ -105,6 +106,7 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTopOnNav />
       <OAuthHashCleanup />
+      <AppDiagnostic />
       <Routes>
         {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
