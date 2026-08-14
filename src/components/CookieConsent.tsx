@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 export const CONSENT_KEY = "avenu_cookie_consent_v2";
 export const PERSIST_LOGIN_KEY = "avenu_persist_session";
 export const PREFS_KEY = "avenu_cookie_preferences";
+// Remembers that the user already chose, so we never bug them again.
+const DECISION_KEY = "avenu_cookie_decision";
 
 export type CookiePreferences = {
   essential: boolean;
@@ -71,10 +73,14 @@ export default function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
-  useEffect(() => {
+    useEffect(() => {
     try {
-      const stored = localStorage.getItem(CONSENT_KEY);
-      if (!stored) {
+      // Only prompt once. Existing users who already accepted (CONSENT_KEY)
+      // or who made a new choice (DECISION_KEY) won't see the banner again.
+      const alreadyChosen =
+        localStorage.getItem(CONSENT_KEY) === "true" ||
+        localStorage.getItem(DECISION_KEY) !== null;
+      if (!alreadyChosen) {
         const timer = setTimeout(() => setIsVisible(true), 1000);
         return () => clearTimeout(timer);
       }
@@ -91,8 +97,17 @@ export default function CookieConsent() {
     }, 400);
   };
 
+    const rememberDecision = (decision: "accepted" | "rejected") => {
+    try {
+      localStorage.setItem(DECISION_KEY, decision);
+    } catch {
+      /* storage unavailable — non-fatal */
+    }
+  };
+
   const handleAcceptAll = () => {
     applyConsent(DEFAULT_PREFS);
+    rememberDecision("accepted");
     dismiss();
   };
 
@@ -103,54 +118,16 @@ export default function CookieConsent() {
       cartState: false,
       analytics: false,
     });
+    rememberDecision("rejected");
     dismiss();
   };
 
-  if (!isVisible) {
-    // Floating cookie badge when dismissed — reopens the banner.
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          setIsExiting(false);
-          setIsVisible(true);
-        }}
-        title="Cookie Settings"
-        style={{
-          position: "fixed",
-          bottom: "1.5rem",
-          left: "1.5rem",
-          zIndex: 998,
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          padding: "0.6rem 1rem",
-          background: "rgba(15, 23, 42, 0.9)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid rgba(56, 189, 248, 0.2)",
-          borderRadius: "9999px",
-          color: "#f8fafc",
-          fontSize: "0.85rem",
-          fontWeight: 500,
-          cursor: "pointer",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
-          e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.5)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "none";
-          e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.2)";
-        }}
-      >
-        <span aria-hidden="true">🍪</span>
-        <span>Cookies</span>
-      </button>
-    );
+    if (!isVisible) {
+    // Consent already handled — never show a floating cookie button.
+    return null;
   }
-// Simple accept / reject banner.
+  // Accept / reject banner (only while isVisible is true).
+
   return (
     <div
       role="dialog"

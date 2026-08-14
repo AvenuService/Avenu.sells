@@ -1,18 +1,9 @@
 import { Link } from "react-router-dom";
 import { InstagramIcon } from "./Icons";
+import { useCatalog } from "../store/CatalogContext";
+import { categories } from "../data/products";
 
-const cols = [
-  {
-    title: "Shop",
-    links: [
-      { to: "/shop", label: "All Products" },
-      { to: "/shop?category=audio", label: "Audio" },
-      { to: "/shop?category=wearables", label: "Wearables" },
-      { to: "/shop?category=computing", label: "Computing" },
-      { to: "/shop?category=apparel", label: "Apparel" },
-      { to: "/shop?category=home", label: "Home" },
-    ],
-  },
+const OTHER_COLS = [
   {
     title: "Company",
     links: [
@@ -36,6 +27,20 @@ const cols = [
 ];
 
 export default function Footer() {
+  const { products } = useCatalog();
+
+  // Only surface categories that actually have products — never link to an
+  // empty shop page. (Wearables / Home were dropped from the catalog.)
+  const shopLinks = [
+    { to: "/shop", label: "All Products" },
+    ...categories
+      .filter((c) => c.slug !== "all")
+      .filter((c) => products.some((p) => p.category === c.slug))
+      .map((c) => ({ to: `/shop?category=${c.slug}`, label: c.name })),
+  ];
+
+  const cols = [{ title: "Shop", links: shopLinks }, ...OTHER_COLS];
+
   return (
     <footer className="footer">
       <div className="container">
@@ -47,9 +52,9 @@ export default function Footer() {
               </span>
               <span className="brand-text">Avenu</span>
             </Link>
-            <p className="muted footer-blurb">
-              Avenu curates tech, apparel, and home essentials designed to feel essential —
-              built to last, tuned to a single icy palette.
+                        <p className="muted footer-blurb">
+              Avenu curates digital essentials — software, presets, and studio
+              services — designed to feel essential, tuned to a single icy palette.
             </p>
             <form className="footer-news" onSubmit={(e) => e.preventDefault()}>
               <input className="field" type="email" placeholder="Email for the Avenu dispatch" aria-label="Email" />

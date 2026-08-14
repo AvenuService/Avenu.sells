@@ -12,13 +12,14 @@ const valueProps = [
   { Icon: SparkIcon, title: "Curated, not crowded", text: "A tight catalog of essentials tuned to a single icy palette." },
 ];
 
+// Wearables & Home were removed — we sell digital items for now.
+// Any remaining category with zero products is hidden automatically, so the
+// grid only ever shows tiles that actually lead somewhere.
 const cats = [
   { slug: "websites", name: "Websites", idx: "01" },
   { slug: "audio", name: "Audio", idx: "02" },
-  { slug: "wearables", name: "Wearables", idx: "03" },
-  { slug: "computing", name: "Computing", idx: "04" },
-  { slug: "apparel", name: "Apparel", idx: "05" },
-  { slug: "home", name: "Home", idx: "06" },
+  { slug: "computing", name: "Computing", idx: "03" },
+  { slug: "apparel", name: "Apparel", idx: "04" },
 ];
 
 export default function Home() {
@@ -136,7 +137,9 @@ export default function Home() {
             </div>
           </div>
           <div className="cat-grid stagger">
-            {cats.map((c) => (
+                        {cats
+              .filter((c) => products.some((p) => p.category === c.slug))
+              .map((c) => (
               <Link to={`/shop?category=${c.slug}`} key={c.slug} className="cat-card">
                 <span className="cat-idx">{c.idx}</span>
                 <ArrowRight className="cat-arrow" size={18} />

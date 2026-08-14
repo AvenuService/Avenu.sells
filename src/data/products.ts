@@ -27,11 +27,9 @@ export type Product = {
 
 export const categories = [
   { slug: "all", name: "All", blurb: "Everything in the catalog" },
-  { slug: "audio", name: "Audio", blurb: "Headphones & speakers tuned for life" },
-  { slug: "wearables", name: "Wearables", blurb: "Track every heartbeat, in style" },
+    { slug: "audio", name: "Audio", blurb: "Headphones & speakers tuned for life" },
   { slug: "computing", name: "Computing", blurb: "Precision machines for makers" },
   { slug: "apparel", name: "Apparel", blurb: "Minimal essentials for everyday" },
-  { slug: "home", name: "Home", blurb: "Objects that elevate your space" },
   { slug: "websites", name: "Websites", blurb: "Custom websites built for you" },
   { slug: "software", name: "Software", blurb: "Digital downloads & keys" },
   { slug: "presets", name: "Presets", blurb: "Color, audio & design presets" },
