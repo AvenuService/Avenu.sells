@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useCatalog } from "../store/CatalogContext";
 import ProductCard from "../components/ProductCard";
-import HeroBackground from "../components/HeroBackground";
+import SplineBackground from "../components/SplineBackground";
+import CookieCallout from "../components/CookieCallout";
 import { LoadingGrid } from "../components/Loading";
 import { ArrowRight, ShieldIcon, SwapIcon, SparkIcon, ZapIcon } from "../components/Icons";
 
@@ -29,8 +30,9 @@ export default function Home() {
   const loading = status === "loading";
   return (
     <>
-      {/* Fixed full-viewport aurora backdrop (lightweight CSS, replaces the WebGL crystal) */}
-      <HeroBackground />
+      {/* Fixed full-viewport background — Spline 3D scene (falls back to CSS aurora when unconfigured) */}
+      <SplineBackground />
+      <CookieCallout />
 
       <div className="home-content">
       {/* HERO */}
