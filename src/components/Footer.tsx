@@ -10,8 +10,9 @@ const OTHER_COLS = [
       { to: "/", label: "About Avenu" },
       { to: "/", label: "Sustainability" },
       { to: "/", label: "Press" },
-      { to: "/", label: "Careers" },
+            { to: "/", label: "Careers" },
       { to: "/", label: "Store Journal" },
+      { to: "/creator", label: "Creator" },
     ],
   },
   {
@@ -87,6 +88,10 @@ export default function Footer() {
             <Link to="/privacy#cookies">Cookies</Link>
             <Link to="/">Accessibility</Link>
           </div>
+                </div>
+
+        <div className="footer-credits">
+          Built &amp; hosted by <span className="accent">Yoro</span> · Project manager: Silving Yoro · Design: Continubbter
         </div>
       </div>
     </footer>

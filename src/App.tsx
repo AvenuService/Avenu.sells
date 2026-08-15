@@ -11,6 +11,7 @@ import Footer from "./components/Footer";
 import BackToTop from "./components/BackToTop";
 
 import Home from "./pages/Home";
+import Creator from "./pages/Creator";
 import Shop from "./pages/Shop";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
@@ -116,7 +117,8 @@ export default function App() {
 
         {/* Storefront layout: hides on /admin/* */}
         <Route element={<StorefrontChrome />}>
-          <Route path="/" element={<Home />} />
+                    <Route path="/" element={<Home />} />
+          <Route path="/creator" element={<Creator />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:slug" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
