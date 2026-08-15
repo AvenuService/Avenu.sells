@@ -8,7 +8,7 @@ import { ArrowRight, ShieldIcon, SwapIcon, SparkIcon, ZapIcon } from "../compone
 const valueProps = [
   { Icon: ZapIcon, title: "Instant digital delivery", text: "Software, presets, and keys unlock the moment you check out." },
   { Icon: ShieldIcon, title: "Secure escrow", text: "Every order is backed by Avenu's buyer-protection guarantee." },
-  { Icon: SwapIcon, title: "30-day refunds", text: "Try it. If it's not right, refund within 30 days, no questions." },
+    { Icon: SwapIcon, title: "Instant access", text: "Digital downloads and services unlock the moment you check out." },
   { Icon: SparkIcon, title: "Curated, not crowded", text: "A tight catalog of essentials tuned to a single icy palette." },
 ];
 
@@ -52,8 +52,7 @@ export default function Home() {
             <div className="hero-stats">
               <div className="hero-stat"><strong>{products.length}</strong><span>Live products</span></div>
               <div className="hero-stat"><strong>{products.filter((p) => p.type === "digital").length}</strong><span>Digital items</span></div>
-              <div className="hero-stat"><strong>{products.filter((p) => p.type === "physical").length}</strong><span>Physical items</span></div>
-              <div className="hero-stat"><strong>30d</strong><span>Easy refunds</span></div>
+                            <div className="hero-stat"><strong>{products.filter((p) => p.type === "physical").length}</strong><span>Physical items</span></div>
             </div>
           </div>
 
