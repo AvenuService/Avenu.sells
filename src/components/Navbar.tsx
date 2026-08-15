@@ -3,8 +3,9 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useCart } from "../store/CartContext";
 import { useCatalog } from "../store/CatalogContext";
 import { useShopperAuth, avatarUrl } from "../store/ShopperAuthContext";
+import { useWishlist } from "../store/WishlistContext";
 import { useDebounce } from "../hooks/useLocalStorage";
-import { CartIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "./Icons";
+import { CartIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "./Icons";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -19,7 +20,8 @@ export default function Navbar() {
   const [showResults, setShowResults] = useState(false);
   const debounced = useDebounce(query, 200);
   const { products } = useCatalog();
-  const { count, openCart } = useCart();
+    const { count, openCart } = useCart();
+  const { count: wishCount } = useWishlist();
   const { session, openAccount } = useShopperAuth();
   const avatar = avatarUrl(session);
   const navigate = useNavigate();
@@ -126,6 +128,15 @@ export default function Navbar() {
               <UserIcon size={20} />
             )}
           </button>
+                    <Link
+            to="/wishlist"
+            className="nav-icon-btn nav-wish-btn"
+            aria-label={`Wishlist${wishCount > 0 ? ` (${wishCount})` : ""}`}
+          >
+            <HeartIcon size={20} />
+            {wishCount > 0 && <span className="cart-count">{wishCount}</span>}
+          </Link>
+
           <button className="nav-icon-btn nav-cart-btn" aria-label="Open cart" onClick={openCart}>
             <CartIcon size={20} />
             {count > 0 && <span className="cart-count">{count}</span>}

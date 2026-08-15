@@ -7,11 +7,11 @@ const OTHER_COLS = [
   {
     title: "Company",
     links: [
-      { to: "/", label: "About Avenu" },
-      { to: "/", label: "Sustainability" },
-      { to: "/", label: "Press" },
-            { to: "/", label: "Careers" },
-      { to: "/", label: "Store Journal" },
+      { to: "/about", label: "About Avenu" },
+      { to: "/sustainability", label: "Sustainability" },
+      { to: "/press", label: "Press" },
+            { to: "/careers", label: "Careers" },
+      { to: "/store-journal", label: "Store Journal" },
       { to: "/creator", label: "Creator" },
     ],
   },

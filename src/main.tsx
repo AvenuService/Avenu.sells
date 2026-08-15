@@ -6,11 +6,13 @@ import { CartProvider } from "./store/CartContext";
 import { OrdersProvider } from "./store/OrdersContext";
 import { AdminAuthProvider } from "./store/AdminAuthContext";
 import { ShopperAuthProvider, consumeOAuthHash } from "./store/ShopperAuthContext";
+import { WishlistProvider } from "./store/WishlistContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./styles/global.css";
 import "./styles/layout.css";
 import "./styles/pages.css";
 import "./styles/admin.css";
+import "./styles/extras.css";
 
 // CRITICAL: parse + strip the OAuth hash fragment BEFORE React mounts so
 // BrowserRouter never sees `#access_token=eyJ...` (which was causing the
@@ -49,7 +51,9 @@ try {
             <CartProvider>
               <AdminAuthProvider>
                 <ShopperAuthProvider>
+                  <WishlistProvider>
                   <App />
+                </WishlistProvider>
                 </ShopperAuthProvider>
               </AdminAuthProvider>
             </CartProvider>

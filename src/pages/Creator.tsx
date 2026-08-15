@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Breadcrumbs from "../components/Breadcrumbs";
+import Seo from "../components/Seo";
 
 /* ============================================================
    Creator / Credits page.
@@ -19,7 +20,7 @@ const contributors = [
   },
   {
     initials: "SY",
-    name: "Silvin | Yoro",
+        name: "Silvin",
         role: "Project Manager",
     tags: [],
     blurb:
@@ -39,7 +40,8 @@ const contributors = [
 
 export default function Creator() {
   return (
-    <div className="container" style={{ paddingBlock: "3rem 5rem" }}>
+        <div className="container" style={{ paddingBlock: "3rem 5rem" }}>
+      <Seo title="Creator" description="The people behind Avenu — credits, builders, and designers." />
       <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Creator" }]} />
 
       <header className="fade-up" style={{ maxWidth: "720px", margin: "1.5rem auto 0", textAlign: "center" }}>
@@ -47,11 +49,16 @@ export default function Creator() {
         <h1 className="section-title" style={{ marginBottom: "1rem" }}>
           The people behind Avenu
         </h1>
-        <p className="muted" style={{ fontSize: "0.92rem", maxWidth: "640px", margin: "0 auto" }}>
-          Avenu is a small crew building digital essentials. This page credits everyone
-          who ships the product — from code to design to the roadmap.
+                        <p className="muted" style={{ fontSize: "0.92rem", maxWidth: "640px", margin: "0 auto" }}>
+          Avenu is a small crew building a tight catalog of digital and physical essentials:
+          software, presets, audio, and apparel, all tuned to one cohesive icy palette. The
+          product is a collaboration between code, design, and the roadmap. Below is who does what.
         </p>
       </header>
+
+      <h2 className="fade-up muted" style={{ maxWidth: "720px", margin: "2rem auto 1.25rem", textAlign: "center", fontSize: "1.05rem", fontWeight: 600 }}>
+        Our team
+      </h2>
 
       <div
         className="creator-grid"
@@ -82,7 +89,7 @@ export default function Creator() {
                 height: 64,
                 borderRadius: "50%",
                 margin: "0 auto 1rem",
-                background: `radial-gradient(135deg, ${c.dot} 0%, color-mix(in srgb, ${c.dot} 60%, transparent) 100%)`,
+                background: `radial-gradient(135deg, ${c.dot} 0%, transparent 70%)`,
                 display: "grid",
                 placeItems: "center",
                 fontSize: "1.5rem",
@@ -143,7 +150,11 @@ export default function Creator() {
         ))}
       </div>
 
-      <div className="fade-up" style={{ marginTop: "2.6rem", textAlign: "center" }}>
+            <p className="muted" style={{ marginTop: "2rem", fontSize: "0.82rem", textAlign: "center" }}>
+        Production credits: built &amp; hosted by Yoro (Continubbter) &middot; project management by Silvin &middot; design by Continubbter.
+      </p>
+
+      <div className="fade-up" style={{ marginTop: "1.5rem", textAlign: "center" }}>
         <Link to="/" className="btn btn-ghost btn-sm">
           ← Back to Avenu
         </Link>
