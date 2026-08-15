@@ -14,6 +14,8 @@ import Home from "./pages/Home";
 import Creator from "./pages/Creator";
 import UnderConstruction from "./pages/UnderConstruction";
 import Wishlist from "./pages/Wishlist";
+import StoreJournal from "./pages/StoreJournal";
+import StoreJournalPost from "./pages/StoreJournalPost";
 import Shop from "./pages/Shop";
 import SearchModal from "./components/SearchModal";
 import ProductDetails from "./pages/ProductDetails";
@@ -120,14 +122,15 @@ export default function App() {
 
         {/* Storefront layout: hides on /admin/* */}
         <Route element={<StorefrontChrome />}>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/creator" element={<Creator />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/creator" element={<Creator />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/about" element={<UnderConstruction title="About Avenu" />} />
           <Route path="/sustainability" element={<UnderConstruction title="Sustainability" />} />
           <Route path="/press" element={<UnderConstruction title="Press" />} />
           <Route path="/careers" element={<UnderConstruction title="Careers" />} />
-          <Route path="/store-journal" element={<UnderConstruction title="Store Journal" />} />
+          <Route path="/store-journal" element={<StoreJournal />} />
+          <Route path="/store-journal/:slug" element={<StoreJournalPost />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:slug" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />

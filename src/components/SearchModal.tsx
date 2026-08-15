@@ -21,6 +21,29 @@ export default function SearchModal() {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Seed the box from ?q=... so shareable links open pre-filled.
+  useEffect(() => {
+    if (!open) return;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setQuery(q);
+  }, [open]);
+
+  // Keep ?q=... in sync with what is typed (replaceState, not push).
+  useEffect(() => {
+    if (!open) return;
+    const u = new URLSearchParams(window.location.search);
+    if (query.trim()) u.set("q", query.trim());
+    else u.delete("q");
+    const qs = u.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+  }, [query, open]);
+
+  // Reset the active result whenever the query changes.
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query]);
 
   // Keyboard: toggle with ⌘K / Ctrl+K, Escape to close.
   useEffect(() => {
@@ -76,6 +99,10 @@ export default function SearchModal() {
   const close = () => {
     setOpen(false);
     setQuery("");
+    const u = new URLSearchParams(window.location.search);
+    u.delete("q");
+    const qs = u.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
   };
 
   const navigateTo = (to: string) => {
@@ -99,9 +126,17 @@ export default function SearchModal() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && results.length > 0) {
+              if (results.length === 0) return;
+              if (e.key === "ArrowDown") {
                 e.preventDefault();
-                navigateTo(`/product/${results[0].slug}`);
+                setActiveIndex((i) => (i + 1) % results.length);
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setActiveIndex((i) => (i - 1 + results.length) % results.length);
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                const target = results[activeIndex] ?? results[0];
+                navigateTo(`/product/${target.slug}`);
               }
             }}
           />
@@ -120,10 +155,11 @@ export default function SearchModal() {
           {query.trim() === "" && (
             <li className="sm-hint">Type to search products…</li>
           )}
-          {results.map((p) => (
+          {results.map((p, i) => (
             <li key={p.id}>
               <button
-                className="sm-result"
+                className={`sm-result ${i === activeIndex ? "sm-result-active" : ""}`}
+                aria-selected={i === activeIndex}
                 onClick={() => navigateTo(`/product/${p.slug}`)}
               >
                 <span

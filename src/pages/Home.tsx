@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useCatalog } from "../store/CatalogContext";
+import Seo from "../components/Seo";
 import ProductCard from "../components/ProductCard";
 import SplineBackground from "../components/SplineBackground";
 import { LoadingGrid } from "../components/Loading";
@@ -30,6 +31,10 @@ export default function Home() {
   const loading = status === "loading";
   return (
     <>
+      <Seo
+        title="Home"
+        description="Avenu — a tight catalog of digital and physical essentials: software, presets, audio, and apparel, tuned to one icy palette."
+      />
       {/* Fixed full-viewport background — Spline 3D scene (falls back to CSS aurora when unconfigured) */}
       <SplineBackground />
 

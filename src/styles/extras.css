@@ -136,6 +136,13 @@
   background: rgba(56, 189, 248, 0.08);
   color: var(--text-primary);
 }
+.sm-result-active,
+.sm-result[aria-selected="true"] {
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--text-primary);
+  outline: 2px solid var(--accent-ice);
+  outline-offset: -2px;
+}
 .sm-dot {
   width: 28px;
   height: 28px;
