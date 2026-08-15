@@ -63,12 +63,23 @@ export default function SplineBackground() {
     };
   }, []);
 
-  const handleLoad = () => {
+    const handleLoad = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
   };
 
-  if (!SPLINE_SCENE_URL || timedOut) {
-    // Not configured, or scene too slow/broken → safe CSS backdrop.
+  // In dev the @splinetool/react-spline canvas is heavy AND StrictMode
+  // double-mounts it, which makes the page feel laggy. We therefore default
+  // to the lightweight CSS aurora locally. Set VITE_FORCE_SPLINE_IN_DEV=true
+  // to preview the 3D scene during local development.
+  const forceSplineInDev =
+    import.meta.env.VITE_FORCE_SPLINE_IN_DEV === "true";
+
+  if (
+    !SPLINE_SCENE_URL ||
+    timedOut ||
+    (import.meta.env.DEV && !forceSplineInDev)
+  ) {
+    // Not configured, timed out, or dev without an explicit opt-in → aurora.
     return <HeroBackground />;
   }
 

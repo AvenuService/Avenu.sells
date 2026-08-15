@@ -369,14 +369,7 @@
 .footer-legal { display: flex; gap: 1.2rem; font-size: 0.85rem; }
 .footer-legal a { color: var(--text-secondary); }
 .footer-legal a:hover { color: var(--accent-ice); }
-.footer-credits {
-  margin-top: 1.1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-faint);
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-.footer-credits .accent { color: var(--accent-ice); font-weight: 600; }
+
 
 /* ---- BREADCRUMBS ---- */
 .crumbs { font-size: 0.85rem; }

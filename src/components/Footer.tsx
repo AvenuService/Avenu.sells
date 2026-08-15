@@ -90,10 +90,7 @@ export default function Footer() {
           </div>
                 </div>
 
-        <div className="footer-credits">
-          Built &amp; hosted by <span className="accent">Yoro</span> · Project manager: Silving Yoro · Design: Continubbter
-        </div>
-      </div>
+              </div>
     </footer>
   );
 }
