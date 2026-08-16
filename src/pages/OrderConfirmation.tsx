@@ -28,8 +28,25 @@ export default function OrderConfirmation() {
   );
 
   // If the checkout flagged this as a Litecoin order, recover the wallet +
-  // amounts from the order notes so we can render the crypto receipt.
+  // amounts from the URL params (primary) or the order notes (fallback) so we
+  // can render the crypto receipt. URL params are the source of truth because
+  // the Supabase write can lag or fail — we never want the confirmation page
+  // to incorrectly show "confirmed" for an unpaid crypto order.
   const cryptoInfo = useMemo<OrderConfirmationCrypto | null>(() => {
+    const walletParam = searchParams.get("wallet");
+    const ltcParam = searchParams.get("ltc");
+    const usdParam = searchParams.get("usd");
+
+    if (payCrypto && walletParam) {
+      return {
+        paymentMethod: "litecoin",
+        wallet: walletParam,
+        ltcAmount: ltcParam ? Number(ltcParam) : undefined,
+        usdTotal: usdParam ? Number(usdParam) : undefined,
+        network: "litecoin",
+      };
+    }
+
     if (!order?.notes) return null;
     try {
       const parsed: OrderConfirmationCrypto = JSON.parse(order.notes);
@@ -37,7 +54,7 @@ export default function OrderConfirmation() {
     } catch {
       return null;
     }
-  }, [order]);
+  }, [order, searchParams, payCrypto]);
 
   // The order is created right before navigation in Checkout; in the local
   // (no-Supabase) path it's already in state, but if we land here before the
@@ -54,21 +71,19 @@ export default function OrderConfirmation() {
   // A crypto order is NOT confirmed until the transaction is verified on the
   // blockchain. Until then we show the "awaiting payment" state instead of the
   // success confirmation to avoid implying the customer paid when they haven't.
+  const orderPaid = order?.status === "paid" || order?.status === "fulfilled";
   const awaitingCrypto =
-    payCrypto &&
-    cryptoInfo?.wallet &&
-    !!order &&
-    !cryptoPaid;
+    payCrypto && cryptoInfo?.wallet && !cryptoPaid && !orderPaid;
 
   return (
     <div className="container">
       <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Order confirmation" }]} />
 
-      {payCrypto && cryptoInfo?.wallet && order && (
+      {payCrypto && cryptoInfo?.wallet && (
         <CryptoReceipt
           wallet={cryptoInfo.wallet}
           ltcAmount={cryptoInfo.ltcAmount ?? 0}
-          usdTotal={cryptoInfo.usdTotal ?? order.total}
+          usdTotal={cryptoInfo.usdTotal ?? order?.total ?? 0}
           onVerified={handleCryptoPaid}
         />
       )}

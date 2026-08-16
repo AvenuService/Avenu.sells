@@ -126,17 +126,17 @@ export default function Checkout() {
       // so the customer sees a confirmation regardless of backend state.
       clear();
       const orderCode = created?.code ?? code;
-      setTimeout(
-        () => navigate(isCrypto ? `/order/${orderCode}?pay=crypto` : `/order/${orderCode}`),
-        700,
-      );
+      const dest = isCrypto
+        ? `/order/${orderCode}?pay=crypto&wallet=${encodeURIComponent(cryptoQuote?.wallet ?? "")}&ltc=${encodeURIComponent((cryptoQuote?.ltcAmount ?? 0).toFixed(6))}&usd=${encodeURIComponent((cryptoQuote?.usdTotal ?? total).toFixed(2))}`
+        : `/order/${orderCode}`;
+      setTimeout(() => navigate(dest), 700);
     } catch {
       // Even if order write fails, don't hang the customer. Fall through to confirmation.
       clear();
-      setTimeout(
-        () => navigate(isCrypto ? `/order/${code}?pay=crypto` : `/order/${code}`),
-        700,
-      );
+      const dest = isCrypto
+        ? `/order/${code}?pay=crypto&wallet=${encodeURIComponent(cryptoQuote?.wallet ?? "")}&ltc=${encodeURIComponent((cryptoQuote?.ltcAmount ?? 0).toFixed(6))}&usd=${encodeURIComponent((cryptoQuote?.usdTotal ?? total).toFixed(2))}`
+        : `/order/${code}`;
+      setTimeout(() => navigate(dest), 700);
     }
   }
 

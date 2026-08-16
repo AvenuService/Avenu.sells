@@ -1,19 +1,50 @@
 /**
  * POST /api/crypto-verify
- * Body:  { txid, wallet, minLtc }
+ * Body:  { txid, wallet, minLtc, email, orderCode }
  *
  * Checks a Litecoin transaction on the public blockchain (Blockchair) and
  * reports whether it is confirmed and whether the customer sent at least
- * `minLtc` to `wallet`.
- *
- * Returns  { verified, confirmations, sentLtc, minLtc, txid }
+ * `minLtc` to `wallet`. When a match is found it best-effort emails the
+ * customer via Resend (if RESEND_API_KEY is configured) with a
+ * "your payment was detected" notice.
  */
 const BLOCKCHAIR_TX =
   (txid) =>
     `https://api.blockchair.com/litecoin/dashboards/transaction/${txid}`;
 
+const RESEND_URL = "https://api.resend.com/emails";
+
 function round6(x) {
   return Number(Number(x).toFixed(6));
+}
+
+/** Fire-and-forget Payment-detected email. Never throws. */
+async function sendPaymentDetectedEmail({ email, orderCode, txid, ltc, usd }) {
+  const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+  if (!apiKey || !email) return;
+  try {
+    const from = process.env.RESEND_FROM || "Avenu <onboarding@resend.dev>";
+    const subject = orderCode
+      ? `Payment detected — order ${orderCode}`
+      : "Your payment was detected";
+    const html = `
+      <h2 style="margin-bottom:8px;">Your payment was detected 🎉</h2>
+      <p>We received your Litecoin payment${orderCode ? ` for order <strong>${orderCode}</strong>` : ""}.</p>
+      <p><strong>Amount:</strong> ${ltc ? ltc.toFixed(6) : "—"} LTC${usd ? ` (≈ $${usd.toFixed(2)})` : ""}</p>
+      <p><strong>TXID:</strong> <code style="word-break:break-all;">${txid || "—"}</code></p>
+      <p>Your order is confirmed. Thank you for shopping with Avenu.</p>`;
+    await fetch(RESEND_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ from, to: [email], subject, html }),
+      signal: AbortSignal.timeout(8000),
+    }).catch(() => {});
+  } catch {
+    /* ignore — email is best-effort */
+  }
 }
 
 export default async function handler(req, res) {
@@ -33,6 +64,8 @@ export default async function handler(req, res) {
   const txid = String(body.txid || "").trim();
   const wallet = String(body.wallet || "").trim();
   const minLtc = Math.max(0, Number(body.minLtc) || 0);
+  const email = String(body.email || "").trim().toLowerCase();
+  const orderCode = String(body.orderCode || "").trim();
 
   if (!txid) {
     res.status(400).json({ ok: false, error: "Missing txid" });
@@ -72,6 +105,19 @@ export default async function handler(req, res) {
     const confirmations =
       Number(rawConf) >= 0 ? Number(rawConf) : node?.transaction ? 1 : 0;
 
+    const matched = sentToWallet >= minLtc * 0.995;
+
+    // If the payment matches, notify the customer (best-effort, never blocks).
+    if (matched) {
+      await sendPaymentDetectedEmail({
+        email,
+        orderCode,
+        txid,
+        ltc: sentToWallet,
+        usd: body.usdTotal ? Number(body.usdTotal) : undefined,
+      });
+    }
+
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({
       ok: true,
@@ -80,11 +126,10 @@ export default async function handler(req, res) {
       confirmations,
       sentToWallet: round6(sentToWallet),
       minLtc: round6(minLtc),
-      matched: sentToWallet >= minLtc * 0.995,
-      message:
-        sentToWallet >= minLtc * 0.995
-          ? "Payment received — transaction found on the Litecoin network."
-          : "Transaction found, but the amount doesn't cover this order yet.",
+      matched,
+      message: matched
+        ? "Payment received — transaction found on the Litecoin network."
+        : "Transaction found, but the amount doesn't cover this order yet.",
     });
   } catch (e) {
     res.status(502).json({ ok: false, error: e.message });

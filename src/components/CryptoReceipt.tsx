@@ -14,9 +14,15 @@ type Props = {
  * Placed on the order-confirmation page for crypto orders. Shows the same
  * wallet + amount the customer saw at checkout, plus a TXID field. When the
  * customer pastes their transaction ID we check the Litecoin blockchain; on a
- * match the order is marked paid (via onVerified).
+ * match the order is marked paid (via onVerified) and a payment-detected
+ * email is sent server-side (best-effort).
  */
-export default function CryptoReceipt({ wallet, ltcAmount, usdTotal, onVerified }: Props) {
+export default function CryptoReceipt({
+  wallet,
+  ltcAmount,
+  usdTotal,
+  onVerified,
+}: Props) {
   const [txid, setTxid] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<"ok" | "fail" | null>(null);
@@ -46,7 +52,6 @@ export default function CryptoReceipt({ wallet, ltcAmount, usdTotal, onVerified 
         setMessage(`Confirmed — ${res.confirmations} confirmations on the Litecoin network. Payment received.`);
         onVerified();
       } else {
-        setResult(null);
         setMessage(
           res.error
             ? res.error

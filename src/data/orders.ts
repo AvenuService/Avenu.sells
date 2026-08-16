@@ -113,6 +113,7 @@ export type OrderInsert = {
   tax: number;
   total: number;
   currency: string;
+  notes: string | null;
 };
 
 export function orderToInsert(o: Omit<Order, "id" | "createdAt" | "updatedAt">): OrderInsert {
@@ -128,5 +129,6 @@ export function orderToInsert(o: Omit<Order, "id" | "createdAt" | "updatedAt">):
     tax: o.tax,
     total: o.total,
     currency: o.currency,
+    notes: o.notes ?? null,
   };
 }
