@@ -60,12 +60,20 @@ export async function verifyCryptoPayment(
   txid: string,
   wallet: string,
   minLtc: number,
+  opts?: { email?: string; orderCode?: string; usdTotal?: number },
 ): Promise<CryptoVerifyResult> {
   try {
     const res = await fetch("/api/crypto-verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ txid, wallet, minLtc }),
+      body: JSON.stringify({
+        txid,
+        wallet,
+        minLtc,
+        email: opts?.email,
+        orderCode: opts?.orderCode,
+        usdTotal: opts?.usdTotal,
+      }),
     });
     const data = await res.json();
     return data as CryptoVerifyResult;
