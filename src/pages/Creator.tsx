@@ -20,7 +20,7 @@ const contributors = [
   },
   {
     initials: "SY",
-        name: "Silvin",
+    name: "Silvin | Yoro",
         role: "Project Manager",
     tags: [],
     blurb:
@@ -151,7 +151,7 @@ export default function Creator() {
       </div>
 
             <p className="muted" style={{ marginTop: "2rem", fontSize: "0.82rem", textAlign: "center" }}>
-        Production credits: built &amp; hosted by Yoro (Continubbter) &middot; project management by Silvin &middot; design by Continubbter.
+        Production credits: built &amp; hosted by Yoro (Continubbter) &middot; project management by Silving Yoro &middot; design by Continubbter.
       </p>
 
       <div className="fade-up" style={{ marginTop: "1.5rem", textAlign: "center" }}>
