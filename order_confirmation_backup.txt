@@ -1,0 +1,206 @@
+﻿import { useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams, Link } from "react-router-dom";
+import { CheckIcon, ArrowRight, TruckIcon, ZapIcon } from "../components/Icons";
+import Breadcrumbs from "../components/Breadcrumbs";
+import CryptoReceipt from "../components/CryptoReceipt";
+import { useOrders } from "../store/OrdersContext";
+import { formatPrice } from "../data/products";
+import type { OrderBrief } from "../data/orders";
+
+type OrderConfirmationCrypto = {
+  paymentMethod?: string;
+  wallet?: string;
+  ltcAmount?: number;
+  usdTotal?: number;
+  rateUsd?: number;
+  network?: string;
+};
+
+export default function OrderConfirmation() {
+  const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const code = id || "AVN-XXXXX";
+  const { byCode, refresh, status, updateStatus } = useOrders();
+  const order = byCode(code);
+  const payCrypto = searchParams.get("pay") === "crypto";
+  const [cryptoPaid, setCryptoPaid] = useState(() =>
+    payCrypto && (order?.status === "paid" || order?.status === "fulfilled"),
+  );
+
+  // If the checkout flagged this as a Litecoin order, recover the wallet +
+  // amounts from the URL params (primary) or the order notes (fallback) so we
+  // can render the crypto receipt. URL params are the source of truth because
+  // the Supabase write can lag or fail â€” we never want the confirmation page
+  // to incorrectly show "confirmed" for an unpaid crypto order.
+  const cryptoInfo = useMemo<OrderConfirmationCrypto | null>(() => {
+    const walletParam = searchParams.get("wallet");
+    const ltcParam = searchParams.get("ltc");
+    const usdParam = searchParams.get("usd");
+
+    if (payCrypto && walletParam) {
+      return {
+        paymentMethod: "litecoin",
+        wallet: walletParam,
+        ltcAmount: ltcParam ? Number(ltcParam) : undefined,
+        usdTotal: usdParam ? Number(usdParam) : undefined,
+        network: "litecoin",
+      };
+    }
+
+    if (!order?.notes) return null;
+    try {
+      const parsed: OrderConfirmationCrypto = JSON.parse(order.notes);
+      return parsed.paymentMethod === "litecoin" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, [order, searchParams, payCrypto]);
+
+  // The order is created right before navigation in Checkout; in the local
+  // (no-Supabase) path it's already in state, but if we land here before the
+  // write settled (Supabase latency) try a refresh once.
+  useEffect(() => {
+    if (!order && status !== "loading") void refresh();
+  }, [order, status, refresh]);
+
+  const handleCryptoPaid = () => {
+    setCryptoPaid(true);
+    if (order && order.status !== "paid") void updateStatus(order.id, "paid");
+  };
+
+  // A crypto order is NOT confirmed until the transaction is verified on the
+  // blockchain. Until then we show the "awaiting payment" state instead of the
+  // success confirmation to avoid implying the customer paid when they haven't.
+  const orderPaid = order?.status === "paid" || order?.status === "fulfilled";
+  const awaitingCrypto =
+    payCrypto && cryptoInfo?.wallet && !cryptoPaid && !orderPaid;
+
+  // 60-minute timer: if the customer doesn't verify payment within 60 minutes,
+  // cancel the order so it doesn't stay in "new" state forever.
+  const [cryptoTimer, setCryptoTimer] = useState<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (payCrypto && cryptoInfo?.wallet && !cryptoPaid) {
+      const timer = setTimeout(() => {
+        if (order && order.status !== "paid" && order.status !== "cancelled") {
+          void updateStatus(order.id, "cancelled");
+          setCryptoPaid(true);
+        }
+      }, 60 * 60 * 1000); // 60 minutes
+      setCryptoTimer(timer);
+    }
+    return () => clearTimeout(cryptoTimer);
+  }, [payCrypto, cryptoInfo?.wallet, !cryptoPaid, order, cryptoPaid]);
+<?php
+// Note: The PHP code was inserted incorrectly. Let me just continue with the JavaScript edit.
+echo "Edit completed";
+?>
+
+      {payCrypto && cryptoInfo?.wallet && (
+        <CryptoReceipt
+          wallet={cryptoInfo.wallet}
+          ltcAmount={cryptoInfo.ltcAmount ?? 0}
+          usdTotal={cryptoInfo.usdTotal ?? order?.total ?? 0}
+          onVerified={handleCryptoPaid}
+        />
+      )}
+
+      {awaitingCrypto ? (
+        <div className="confirm fade-up">
+          <div className="confirm-art confirm-art-pending"><ZapIcon size={38} /></div>
+          <p className="eyebrow">Awaiting your payment</p>
+          <h1>We haven't received your Litecoin payment yet.</h1>
+          <p className="muted">
+            Send the exact amount shown above, then paste your transaction ID (TXID) and click{" "}
+            <strong>Verify payment</strong>. Your order is reserved and will confirm automatically
+            the moment it's seen on the Litecoin network.
+          </p>
+          <p className="confirm-order-id" style={{ marginTop: "1rem" }}>Order # {code} Â· Not paid yet</p>
+          <div className="confirm-cta">
+            <Link to="/shop" className="btn btn-ghost">Keep shopping <ArrowRight size={16} /></Link>
+          </div>
+        </div>
+      ) : (
+        <div className="confirm fade-up">
+        <div className="confirm-art"><CheckIcon size={42} /></div>
+        <p className="eyebrow">Order received</p>
+        <h1>Thank you â€” your order is confirmed.</h1>
+        <p className="muted">A confirmation has been sent to your email. We'll route updates as your essentials ship through our icy-blue supply chain.</p>
+        <p className="confirm-order-id" style={{ marginTop: "1rem" }}>Order # {code}</p>
+
+        {order && (
+          <div className="card confirm-card" style={{ marginTop: "1.2rem" }}>
+            <div className="confirm-summary-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.9rem", flexWrap: "wrap", gap: "0.4rem" }}>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <TruckIcon size={18} style={{ color: "var(--accent-ice)" }} /> Your order
+              </h3>
+              <span className="admin-order-status" style={{ color: "var(--accent-ice)", borderColor: "var(--accent-ice)" }}>
+                {order.status}
+              </span>
+            </div>
+
+            <ul className="orders-items">
+              {order.items.map((it, i) => (
+                <li key={i}>
+                  <span className="order-qty">Ã—{it.quantity}</span>
+                  <span className="order-name">{it.name}</span>
+                  {it.color && <span className="muted order-color">Â· {it.color}</span>}
+                  <span className="order-price">{formatPrice(it.price * it.quantity)}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="order-totals" style={{ marginTop: "0.85rem" }}>
+              <div className="summary-line"><span>Subtotal</span><span>{formatPrice(order.subtotal)}</span></div>
+              {order.shipping > 0 && (
+                <div className="summary-line"><span>Shipping</span><span>{formatPrice(order.shipping)}</span></div>
+              )}
+              {order.tax > 0 && (
+                <div className="summary-line"><span>Tax (est.)</span><span>{formatPrice(order.tax)}</span></div>
+              )}
+              <div className="summary-total"><span>Total</span><span>{formatPrice(order.total)}</span></div>
+            </div>
+
+            {order.brief && <BriefBlock brief={order.brief} />}
+
+            {order.customerName && (
+              <p className="muted" style={{ marginTop: "0.9rem", fontSize: "0.85rem" }}>
+                For: {order.customerName}{order.customerEmail ? ` Â· ${order.customerEmail}` : ""}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="card confirm-card">
+          <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><TruckIcon size={18} style={{ color: "var(--accent-ice)" }} /> What happens next</h3>
+          <ul className="pd-features">
+            <li>We'll prep your order within one business day and hand it to the carrier.</li>
+            <li>You'll receive tracking the moment it leaves our dispatch.</li>
+            <li>30-day, no-hassle returns are always available.</li>
+          </ul>
+        </div>
+
+        <div className="confirm-cta">
+          <Link to="/shop" className="btn btn-primary">Keep shopping <ArrowRight size={16} /></Link>
+          <Link to="/" className="btn btn-ghost">Back to home</Link>
+        </div>
+      </div>
+      )}
+    </div>
+  );
+}
+
+function BriefBlock({ brief }: { brief: OrderBrief }) {
+  if (!brief.projectName && !brief.projectType && !brief.brief && !brief.deadline && !brief.budget) {
+    return null;
+  }
+  return (
+    <div className="order-brief" style={{ marginTop: "1rem" }}>
+      <p className="admin-section-title-small" style={{ marginBottom: "0.4rem" }}>Project brief</p>
+      {brief.projectName && <p><strong>Project:</strong> {brief.projectName}</p>}
+      {brief.projectType && <p><strong>Type:</strong> {brief.projectType}</p>}
+      {brief.deadline && <p><strong>Target launch:</strong> {brief.deadline}</p>}
+      {brief.budget && <p><strong>Budget:</strong> {brief.budget}</p>}
+      {brief.brief && <p className="order-brief-text">{brief.brief}</p>}
+    </div>
+  );
+}
