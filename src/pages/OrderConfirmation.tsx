@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { CheckIcon, ArrowRight, TruckIcon } from "../components/Icons";
+import { CheckIcon, ArrowRight, TruckIcon, ZapIcon } from "../components/Icons";
 import Breadcrumbs from "../components/Breadcrumbs";
 import CryptoReceipt from "../components/CryptoReceipt";
 import { useOrders } from "../store/OrdersContext";
@@ -23,6 +23,9 @@ export default function OrderConfirmation() {
   const { byCode, refresh, status, updateStatus } = useOrders();
   const order = byCode(code);
   const payCrypto = searchParams.get("pay") === "crypto";
+  const [cryptoPaid, setCryptoPaid] = useState(() =>
+    payCrypto && (order?.status === "paid" || order?.status === "fulfilled"),
+  );
 
   // If the checkout flagged this as a Litecoin order, recover the wallet +
   // amounts from the order notes so we can render the crypto receipt.
@@ -44,8 +47,18 @@ export default function OrderConfirmation() {
   }, [order, status, refresh]);
 
   const handleCryptoPaid = () => {
+    setCryptoPaid(true);
     if (order && order.status !== "paid") void updateStatus(order.id, "paid");
   };
+
+  // A crypto order is NOT confirmed until the transaction is verified on the
+  // blockchain. Until then we show the "awaiting payment" state instead of the
+  // success confirmation to avoid implying the customer paid when they haven't.
+  const awaitingCrypto =
+    payCrypto &&
+    cryptoInfo?.wallet &&
+    !!order &&
+    !cryptoPaid;
 
   return (
     <div className="container">
@@ -60,7 +73,23 @@ export default function OrderConfirmation() {
         />
       )}
 
-      <div className="confirm fade-up">
+      {awaitingCrypto ? (
+        <div className="confirm fade-up">
+          <div className="confirm-art confirm-art-pending"><ZapIcon size={38} /></div>
+          <p className="eyebrow">Awaiting your payment</p>
+          <h1>We haven't received your Litecoin payment yet.</h1>
+          <p className="muted">
+            Send the exact amount shown above, then paste your transaction ID (TXID) and click{" "}
+            <strong>Verify payment</strong>. Your order is reserved and will confirm automatically
+            the moment it's seen on the Litecoin network.
+          </p>
+          <p className="confirm-order-id" style={{ marginTop: "1rem" }}>Order # {code} · Not paid yet</p>
+          <div className="confirm-cta">
+            <Link to="/shop" className="btn btn-ghost">Keep shopping <ArrowRight size={16} /></Link>
+          </div>
+        </div>
+      ) : (
+        <div className="confirm fade-up">
         <div className="confirm-art"><CheckIcon size={42} /></div>
         <p className="eyebrow">Order received</p>
         <h1>Thank you — your order is confirmed.</h1>
@@ -124,6 +153,7 @@ export default function OrderConfirmation() {
           <Link to="/" className="btn btn-ghost">Back to home</Link>
         </div>
       </div>
+      )}
     </div>
   );
 }

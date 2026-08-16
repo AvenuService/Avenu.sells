@@ -356,6 +356,7 @@
    ============================================================ */
 .confirm { padding-block: clamp(3rem, 7vw, 6rem); text-align: center; max-width: 720px; margin-inline: auto; }
 .confirm-art { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(180deg, var(--accent-ice), var(--accent-soft)); display: grid; place-items: center; margin: 0 auto 1.5rem; color: #021024; box-shadow: 0 16px 50px -12px rgba(193, 232, 255, 0.55); animation: float 5s ease-in-out infinite; }
+.confirm-art-pending { background: linear-gradient(180deg, #fbbf24, #f59e0b); color: #331c03; box-shadow: 0 16px 50px -12px rgba(251, 191, 36, 0.45); }
 .confirm h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 0.75rem; }
 .confirm p { color: var(--text-secondary); margin-bottom: 0.5rem; }
 .confirm-order-id { font-family: var(--font-display); font-weight: 600; color: var(--accent-ice); }
