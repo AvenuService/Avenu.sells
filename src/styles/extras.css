@@ -174,6 +174,106 @@
 
 /* ---- Nav buttons for wishlist + cmd/k search ---- */
 .nav-wish-btn .cart-count,
+/* ---- Crypto (Litecoin) payment ---- */
+.crypto-panel {
+  padding: 1.4rem;
+  background: linear-gradient(180deg, rgba(5, 38, 89, 0.5), rgba(2, 16, 36, 0.55));
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-md);
+}
+.crypto-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.1rem;
+}
+.crypto-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 0.55rem;
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(135deg, #7c4dff 0%, #ff4d8d 100%);
+  box-shadow: 0 0 22px rgba(255, 77, 141, 0.25);
+}
+.crypto-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1.4rem;
+  align-items: start;
+}
+@media (max-width: 620px) {
+  .crypto-grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}
+.crypto-qr {
+  width: 200px;
+  height: 200px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #fff;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.crypto-qr img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.crypto-qr-fallback {
+  color: #5c6b8a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.crypto-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+.crypto-line {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.crypto-line .btn {
+  align-self: flex-start;
+}
+.crypto-addr {
+  display: block;
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-size: 0.82rem;
+  word-break: break-all;
+  color: var(--text-primary);
+  background: rgba(2, 16, 36, 0.6);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.6rem;
+}
+.crypto-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #86efac;
+  border: 1px solid rgba(134, 239, 172, 0.35);
+  border-radius: 999px;
+  background: rgba(134, 239, 172, 0.08);
+}
 .nav-search-btn .cart-count {
   top: 1px;
 }

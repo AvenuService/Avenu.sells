@@ -1,16 +1,40 @@
-import { useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { CheckIcon, ArrowRight, TruckIcon } from "../components/Icons";
 import Breadcrumbs from "../components/Breadcrumbs";
+import CryptoReceipt from "../components/CryptoReceipt";
 import { useOrders } from "../store/OrdersContext";
 import { formatPrice } from "../data/products";
 import type { OrderBrief } from "../data/orders";
 
+type OrderConfirmationCrypto = {
+  paymentMethod?: string;
+  wallet?: string;
+  ltcAmount?: number;
+  usdTotal?: number;
+  rateUsd?: number;
+  network?: string;
+};
+
 export default function OrderConfirmation() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const code = id || "AVN-XXXXX";
-  const { byCode, refresh, status } = useOrders();
+  const { byCode, refresh, status, updateStatus } = useOrders();
   const order = byCode(code);
+  const payCrypto = searchParams.get("pay") === "crypto";
+
+  // If the checkout flagged this as a Litecoin order, recover the wallet +
+  // amounts from the order notes so we can render the crypto receipt.
+  const cryptoInfo = useMemo<OrderConfirmationCrypto | null>(() => {
+    if (!order?.notes) return null;
+    try {
+      const parsed: OrderConfirmationCrypto = JSON.parse(order.notes);
+      return parsed.paymentMethod === "litecoin" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, [order]);
 
   // The order is created right before navigation in Checkout; in the local
   // (no-Supabase) path it's already in state, but if we land here before the
@@ -19,9 +43,22 @@ export default function OrderConfirmation() {
     if (!order && status !== "loading") void refresh();
   }, [order, status, refresh]);
 
+  const handleCryptoPaid = () => {
+    if (order && order.status !== "paid") void updateStatus(order.id, "paid");
+  };
+
   return (
     <div className="container">
       <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Order confirmation" }]} />
+
+      {payCrypto && cryptoInfo?.wallet && order && (
+        <CryptoReceipt
+          wallet={cryptoInfo.wallet}
+          ltcAmount={cryptoInfo.ltcAmount ?? 0}
+          usdTotal={cryptoInfo.usdTotal ?? order.total}
+          onVerified={handleCryptoPaid}
+        />
+      )}
 
       <div className="confirm fade-up">
         <div className="confirm-art"><CheckIcon size={42} /></div>

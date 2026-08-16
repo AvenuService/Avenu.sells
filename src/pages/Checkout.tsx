@@ -1,10 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../store/CartContext";
 import { useOrders, generateOrderCode } from "../store/OrdersContext";
 import { useShopperAuth } from "../store/ShopperAuthContext";
 import { formatPrice } from "../data/products";
 import Breadcrumbs from "../components/Breadcrumbs";
+import CryptoPayment from "../components/CryptoPayment";
+import { getCryptoQuote, type CryptoQuote } from "../lib/crypto";
 import { ArrowRight, CheckIcon, ShieldIcon, TruckIcon, GoogleIcon } from "../components/Icons";
 
 type Delivery = "standard" | "express" | "nextday";
@@ -14,7 +16,8 @@ const deliveryOptions: { id: Delivery; name: string; note: string; price: number
   { id: "nextday", name: "Next-day", note: "Order by 2pm local", price: 24 },
 ];
 
-const paymentMethods = ["Card", "Apple Pay", "PayPal", "Affirm"] as const;
+const paymentMethods = ["Litecoin (Crypto)", "Card", "Apple Pay", "PayPal", "Affirm"] as const;
+const CRYPTO_METHOD = "Litecoin (Crypto)";
 
 export default function Checkout() {
   const { items, subtotal, tax, clear } = useCart();
@@ -22,9 +25,12 @@ export default function Checkout() {
   const { session, loading: authLoading, signInWithGoogle, error: authError } = useShopperAuth();
   const navigate = useNavigate();
   const [delivery, setDelivery] = useState<Delivery>("standard");
-  const [payment, setPayment] = useState<string>("Card");
+  const [payment, setPayment] = useState<string>(CRYPTO_METHOD);
   const [placed, setPlaced] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [cryptoQuote, setCryptoQuote] = useState<CryptoQuote | null>(null);
+  const [cryptoLoading, setCryptoLoading] = useState(false);
+  const [cryptoError, setCryptoError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const serviceOnly = items.length > 0 && items.every((i) => i.type === "service");
@@ -32,6 +38,28 @@ export default function Checkout() {
   const freeShip = subtotal >= 150;
   const finalShipping = serviceOnly ? 0 : (freeShip ? 0 : deliveryPrice);
   const total = subtotal + finalShipping + tax;
+
+  // Fetch the live LTC quote whenever the order total changes (only matters on
+  // the crypto method, but it's cheap to keep warm).
+  useEffect(() => {
+    let active = true;
+    setCryptoLoading(true);
+    getCryptoQuote(total)
+      .then((q) => {
+        if (!active) return;
+        setCryptoQuote(q);
+        setCryptoError(null);
+      })
+      .catch((e) => {
+        if (active) setCryptoError(String(e?.message ?? e));
+      })
+      .finally(() => {
+        if (active) setCryptoLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [total]);
 
   function readField(id: string): string {
     const el = formRef.current?.querySelector(`#${id}`) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
@@ -67,6 +95,18 @@ export default function Checkout() {
       type: i.type,
     }));
 
+    const isCrypto = payment === CRYPTO_METHOD;
+    const notes = isCrypto
+      ? JSON.stringify({
+          paymentMethod: "litecoin",
+          wallet: cryptoQuote?.wallet ?? "",
+          ltcAmount: cryptoQuote?.ltcAmount ?? 0,
+          usdTotal: cryptoQuote?.usdTotal ?? total,
+          rateUsd: cryptoQuote?.rateUsd ?? 0,
+          network: "litecoin",
+        })
+      : undefined;
+
     try {
       const created = await createOrder({
         code,
@@ -75,6 +115,7 @@ export default function Checkout() {
         customerName,
         items: orderItems,
         brief,
+        notes,
         subtotal,
         shipping: finalShipping,
         tax,
@@ -85,11 +126,17 @@ export default function Checkout() {
       // so the customer sees a confirmation regardless of backend state.
       clear();
       const orderCode = created?.code ?? code;
-      setTimeout(() => navigate(`/order/${orderCode}`), 700);
+      setTimeout(
+        () => navigate(isCrypto ? `/order/${orderCode}?pay=crypto` : `/order/${orderCode}`),
+        700,
+      );
     } catch {
       // Even if order write fails, don't hang the customer. Fall through to confirmation.
       clear();
-      setTimeout(() => navigate(`/order/${code}`), 700);
+      setTimeout(
+        () => navigate(isCrypto ? `/order/${code}?pay=crypto` : `/order/${code}`),
+        700,
+      );
     }
   }
 
@@ -266,6 +313,17 @@ export default function Checkout() {
               ))}
             </div>
 
+            {payment === CRYPTO_METHOD && (
+              <div style={{ marginTop: "1rem" }}>
+                <CryptoPayment
+                  quote={cryptoQuote}
+                  loading={cryptoLoading}
+                  error={cryptoError}
+                  onCopy={() => undefined}
+                />
+              </div>
+            )}
+
             {payment === "Card" && (
               <div className="form-grid" style={{ marginTop: "1rem" }}>
                 <div className="form-group full"><label htmlFor="card">Card number</label><input id="card" className="field" placeholder="0000 0000 0000 0000" inputMode="numeric" /></div>
@@ -274,13 +332,18 @@ export default function Checkout() {
                 <div className="form-group full"><label htmlFor="name">Name on card</label><input id="name" className="field" placeholder="Avery Frost" /></div>
               </div>
             )}
-            {payment !== "Card" && (
+            {payment !== CRYPTO_METHOD && payment !== "Card" && (
               <p className="muted" style={{ marginTop: "1rem", fontSize: "0.9rem" }}>You'll be redirected to {payment} to complete your purchase securely.</p>
+            )}
+            {payment === CRYPTO_METHOD && (
+              <p className="muted" style={{ marginTop: "0.9rem", fontSize: "0.9rem" }}>
+                Copy the wallet address (or scan the QR) and send <strong>{cryptoQuote?.ltcAmount ? cryptoQuote.ltcAmount.toFixed(6) : "…"} LTC</strong>. After sending, place the order — you'll verify your transaction on the confirmation page.
+              </p>
             )}
           </section>
 
           <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={placed} style={{ marginTop: "0.6rem" }}>
-            {placed ? "Placing order…" : <>Place order · {formatPrice(total)} <ArrowRight size={16} /></>}
+            {placed ? "Placing order…" : payment === CRYPTO_METHOD ? <>Place order · Pay with Litecoin <ArrowRight size={16} /></> : <>Place order · {formatPrice(total)} <ArrowRight size={16} /></>}
           </button>
           <div className="summary-meta" style={{ marginTop: "0.85rem", justifyContent: "center" }}>
             <ShieldIcon size={14} /><span>Encrypted, PCI-compliant checkout · Your card details never touch Avenu.</span>
