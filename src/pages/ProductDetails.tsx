@@ -78,9 +78,13 @@ export default function ProductDetails() {
         <div className="pd-gallery fade-up">
           <div
             className="pd-hero-art"
-            style={{ background: `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)` }}
+            style={{
+              background: product.imageBanner
+                ? `url(${product.imageBanner}) center/cover`
+                : `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)`,
+            }}
           >
-            <span>{product.name.charAt(0)}</span>
+            {!product.imageBanner && <span>{product.name.charAt(0)}</span>}
             {isService && <span className="pd-preview-note">Gallery preview coming soon</span>}
           </div>
           <div className="pd-thumb-row">

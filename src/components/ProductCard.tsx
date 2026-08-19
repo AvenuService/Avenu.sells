@@ -29,10 +29,14 @@ export default function ProductCard({ product }: { product: Product }) {
         <div
           className="pc-art"
           style={{
-            backgroundImage: `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)`,
+            backgroundImage: product.imageBanner
+              ? `url(${product.imageBanner})`
+              : `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
           }}
         >
-          <span className="pc-glyph">{product.name.charAt(0)}</span>
+          {!product.imageBanner && <span className="pc-glyph">{product.name.charAt(0)}</span>}
         </div>
         {product.oldPrice && <span className="pc-flag">Save {formatPrice(product.oldPrice - product.price)}</span>}
         {product.bestseller && <span className="pc-flag flag-ice">Bestseller</span>}
