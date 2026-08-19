@@ -99,21 +99,84 @@ export default function ProductEditor() {
   function addColor() { setDraft((d) => ({ ...d, colors: [...d.colors, { name: "Custom", hex: "#5483B3" }] })); }
   function removeColor(i: number) { setDraft((d) => ({ ...d, colors: d.colors.filter((_, j) => j !== i) })); }
 
-  // image upload (read as dataURL — stored locally for this build tier)
+  // Image upload with validation and metadata
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [imageMetadata, setImageMetadata] = useState<{ width: number; height: number; size: number; type: string } | null>(null);
+
   function onBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      setUploadError("Image must be under 4 MB");
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError("Please select a valid image file (PNG, JPG, WebP, etc.)");
       return;
     }
+
+    // Validate file size (4MB limit)
+    const maxSize = 4 * 1024 * 1024; // 4MB
+    if (file.size > maxSize) {
+      setUploadError(`Image must be under ${formatFileSize(maxSize)}. Current size: ${formatFileSize(file.size)}`);
+      return;
+    }
+
+    // Read and validate image dimensions
     const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") { patch("imageBanner", reader.result); setUploadError(null); }
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (!dataUrl) {
+        setUploadError("Failed to read image file");
+        return;
+      }
+
+      // Create image to check dimensions
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        
+        // Validate dimensions (reasonable limits for banner images)
+        const minWidth = 200;
+        const minHeight = 200;
+        const maxWidth = 4000;
+        const maxHeight = 4000;
+
+        if (width < minWidth || height < minHeight) {
+          setUploadError(`Image dimensions too small. Minimum: ${minWidth}×${minHeight}px. Got: ${width}×${height}px`);
+          return;
+        }
+
+        if (width > maxWidth || height > maxHeight) {
+          setUploadError(`Image dimensions too large. Maximum: ${maxWidth}×${maxHeight}px. Got: ${width}×${height}px`);
+          return;
+        }
+
+        // All validations passed
+        setUploadError(null);
+        setImageMetadata({ width, height, size: file.size, type: file.type });
+        patch("imageBanner", dataUrl);
+      };
+
+      img.onerror = () => {
+        setUploadError("Failed to load image. File may be corrupted.");
+      };
+
+      img.src = dataUrl;
     };
+
+    reader.onerror = () => {
+      setUploadError("Failed to read file. Please try again.");
+    };
+
     reader.readAsDataURL(file);
   }
-  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
 
   function validate(): boolean {
     if (!draft.name.trim()) return false;
@@ -406,15 +469,28 @@ export default function ProductEditor() {
               <legend className="admin-legend">Banner image</legend>
               {draft.imageBanner && (
                 <div className="ae-banner-thumb" style={{ backgroundImage: `url(${draft.imageBanner})` }}>
-                  <button type="button" className="ae-banner-remove" onClick={() => patch("imageBanner", "")} aria-label="Remove banner"><TrashIcon size={14} /></button>
+                  <button type="button" className="ae-banner-remove" onClick={() => { patch("imageBanner", ""); setImageMetadata(null); }} aria-label="Remove banner"><TrashIcon size={14} /></button>
+                </div>
+              )}
+              {imageMetadata && draft.imageBanner && (
+                <div className="ae-image-meta">
+                  <span className="ae-meta-item">
+                    <strong>Dimensions:</strong> {imageMetadata.width} × {imageMetadata.height} px
+                  </span>
+                  <span className="ae-meta-item">
+                    <strong>File size:</strong> {formatFileSize(imageMetadata.size)}
+                  </span>
+                  <span className="ae-meta-item">
+                    <strong>Type:</strong> {imageMetadata.type.split('/')[1].toUpperCase()}
+                  </span>
                 </div>
               )}
               <label className="ae-upload">
                 <input type="file" accept="image/*" onChange={onBannerUpload} hidden />
-                <span><PlusIcon size={16} /> {draft.imageBanner ? "Replace banner" : "Upload image (.png, .jpg ≤ 4MB)"}</span>
+                <span><PlusIcon size={16} /> {draft.imageBanner ? "Replace banner" : "Upload image (PNG, JPG, WebP ≤ 4MB)"}</span>
               </label>
               {uploadError && <small className="field-hint error">{uploadError}</small>}
-              <small className="field-hint">Optional — keep blank for gradient + glyph art.</small>
+              <small className="field-hint">Optional — keep blank for gradient + glyph art. Recommended: 1200×600px or similar aspect ratio.</small>
 
               <div className="form-group" style={{ marginTop: "0.7rem" }}>
                 <label htmlFor="remote">…or paste remote image URL</label>

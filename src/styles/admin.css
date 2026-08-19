@@ -231,6 +231,9 @@
 .ae-banner-thumb { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); background-size: cover; background-position: center; margin-bottom: 0.7rem; }
 .ae-banner-remove { position: absolute; top: 0.5rem; right: 0.5rem; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: rgba(2,16,36,0.85); color: #ff8a8a; backdrop-filter: blur(8px); }
 .ae-upload { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); cursor: pointer; color: var(--accent-soft); font-size: 0.85rem; transition: all var(--t-fast); }
+.ae-image-meta { display: flex; flex-wrap: wrap; gap: 0.8rem; padding: 0.5rem 0.7rem; background: rgba(193, 232, 255, 0.06); border: 1px solid rgba(193, 232, 255, 0.12); border-radius: var(--radius-sm); margin-bottom: 0.6rem; font-size: 0.82rem; }
+.ae-meta-item { color: var(--accent-soft); }
+.ae-meta-item strong { color: var(--accent-ice); font-weight: 600; margin-right: 0.25rem; }
 .ae-upload:hover { border-color: var(--accent-ice); color: var(--accent-ice); background: rgba(193, 232, 255, 0.04); }
 
 .admin-save-bar { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; background: rgba(2,16,36,0.4); border: 1px solid var(--border-faint); border-radius: var(--radius-md); }
