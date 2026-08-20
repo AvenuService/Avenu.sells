@@ -52,14 +52,6 @@ export default function ProductDetails() {
   const relatedProducts = related(product.slug, 4);
   const inStock = product.stock > 0;
   const isService = product.type === "service";
-  const p: Product = product;
-
-  function thumbStyle(angle: number, depth: number): React.CSSProperties {
-    return {
-      background: `radial-gradient(120% 90% at 30% 0%, ${p.gradient[0]} 0%, ${p.gradient[1]} ${depth}%, #021024 100%)`,
-      transform: `rotate(${angle}deg)`,
-    };
-  }
 
   return (
     <div className="container">
@@ -76,30 +68,49 @@ export default function ProductDetails() {
 
       <div className="pd-grid">
         <div className="pd-gallery fade-up">
-          <div
-            className="pd-hero-art"
-            style={{
-              background: product.imageBanner
-                ? `url(${product.imageBanner}) center/cover`
-                : `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)`,
-            }}
-          >
-            {!product.imageBanner && <span>{product.name.charAt(0)}</span>}
-            {isService && <span className="pd-preview-note">Gallery preview coming soon</span>}
-          </div>
-          <div className="pd-thumb-row">
-            {[0, 1, 2, 3].map((i) => (
-              <button
-                key={i}
-                className={`pd-thumb ${thumb === i ? "active" : ""}`}
-                style={thumbStyle(i * 6 - 9, 50 + i * 10)}
-                onClick={() => setThumb(i)}
-                aria-label={`View ${i + 1}`}
-              >
-                {product.name.charAt(0)}
-              </button>
-            ))}
-          </div>
+          {(() => {
+            // Full set of images shown in the gallery: banner first, then extras.
+            const galleryImages = [product.imageBanner, ...(product.gallery ?? [])].filter((im): im is string => !!im && im.trim() !== "");
+            const active = Math.min(thumb, Math.max(0, galleryImages.length - 1));
+            const activeImage = galleryImages.length ? galleryImages[active] : undefined;
+
+            return (
+              <>
+                <div
+                  className="pd-hero-art"
+                  style={{
+                    backgroundImage: activeImage
+                      ? undefined
+                      : `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  {activeImage ? (
+                    <img src={activeImage} alt={`${product.name} view ${active + 1}`} className="pd-hero-img" />
+                  ) : (
+                    <span>{product.name.charAt(0)}</span>
+                  )}
+                </div>
+
+                {galleryImages.length > 1 && (
+                  <div className="pd-thumb-row">
+                    {galleryImages.map((img, i) => (
+                      <button
+                        key={i}
+                        className={`pd-thumb ${thumb === i ? "active" : ""}`}
+                        style={{ background: `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)` }}
+                        onClick={() => setThumb(i)}
+                        aria-label={`View ${i + 1}`}
+                      >
+                        <img src={img} alt="" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         <div className="pd-info fade-up">

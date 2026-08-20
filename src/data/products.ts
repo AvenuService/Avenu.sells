@@ -21,6 +21,7 @@ export type Product = {
   featured?: boolean;
   bestseller?: boolean;
   imageBanner?: string; // URL or data URL
+  gallery?: string[]; // additional images shown in the product gallery
   gradient: [string, string];
   createdAt: number;
 };

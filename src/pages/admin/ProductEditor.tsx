@@ -42,6 +42,7 @@ const blankDraft: Draft = {
   featured: false,
   bestseller: false,
   imageBanner: "",
+  gallery: [] as string[],
   gradient: pickGradient("avenu"),
 };
 
@@ -178,6 +179,45 @@ export default function ProductEditor() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
+  // Gallery: add one or more extra images (appended to the gallery array)
+  function onGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+
+    const valid: string[] = [];
+    const maxSize = 4 * 1024 * 1024; // 4MB each
+
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        setUploadError("One or more files are not valid images.");
+        continue;
+      }
+      if (file.size > maxSize) {
+        setUploadError(`Each gallery image must be under ${formatFileSize(maxSize)}.`);
+        continue;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        if (dataUrl) valid.push(dataUrl);
+      };
+      reader.onerror = () => setUploadError("Failed to read a gallery image.");
+      reader.readAsDataURL(file);
+    }
+
+    // Wait for file reads to finish, then append valid images (dedup)
+    setTimeout(() => {
+      if (valid.length === 0) return;
+      const merged = Array.from(new Set([...(draft.gallery ?? []), ...valid]));
+      patch("gallery", merged);
+      setUploadError(null);
+    }, 350);
+  }
+
+  function removeGalleryImage(i: number) {
+    patch("gallery", (draft.gallery ?? []).filter((_, j) => j !== i));
+  }
+
   function validate(): boolean {
     if (!draft.name.trim()) return false;
     if (draft.price < 0) return false;
@@ -199,6 +239,7 @@ export default function ProductEditor() {
       ...draft,
       slug: slugPreview,
       features: cleanFeatures,
+      gallery: (draft.gallery ?? []).filter((g) => g && g.trim()),
       colors: cleanColors.length ? cleanColors : [{ name: "Avenu", hex: "#021024" }],
       gradient: draft.imageBanner ? draft.gradient : pickGradient(draft.name),
       type: draft.type,
@@ -495,6 +536,31 @@ export default function ProductEditor() {
               <div className="form-group" style={{ marginTop: "0.7rem" }}>
                 <label htmlFor="remote">…or paste remote image URL</label>
                 <input id="remote" className="field" value={draft.imageBanner?.startsWith("data:") ? "" : draft.imageBanner ?? ""} onChange={(e) => patch("imageBanner", e.target.value)} placeholder="https://…" />
+              </div>
+
+              <div style={{ marginTop: "0.9rem", borderTop: "1px solid var(--border-faint)", paddingTop: "0.6rem" }}>
+                <label className="admin-legend" style={{ fontSize: "0.95rem" }}>Gallery images</label>
+                {(() => {
+                  const gallery = draft.gallery ?? [];
+                  if (gallery.length === 0) return null;
+                  return (
+                    <div className="ae-gallery-grid">
+                      {gallery.map((g, i) => (
+                        <div className="ae-gallery-cell" key={i} title="Gallery image">
+                          <div className="ae-gallery-thumb" style={{ backgroundImage: `url(${g})`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
+                          <button type="button" className="ae-banner-remove" onClick={() => removeGalleryImage(i)} aria-label="Remove gallery image"><TrashIcon size={13} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                <label className="ae-upload">
+                  <input type="file" accept="image/*" multiple onChange={onGalleryUpload} hidden />
+                  <span><PlusIcon size={16} /> Add gallery image(s)</span>
+                </label>
+                <small className="field-hint" style={{ display: "block" }}>
+                  Adds more views to the product gallery. Up to a few images, each ≤ 4MB. Click a thumbnail's ✕ to remove.
+                </small>
               </div>
             </div>
 

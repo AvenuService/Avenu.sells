@@ -34,6 +34,7 @@ export default function ProductCard({ product }: { product: Product }) {
               : `radial-gradient(120% 90% at 30% 0%, ${product.gradient[0]} 0%, ${product.gradient[1]} 60%, #021024 100%)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
           }}
         >
           {!product.imageBanner && <span className="pc-glyph">{product.name.charAt(0)}</span>}

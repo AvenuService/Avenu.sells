@@ -22,6 +22,7 @@ export type ProductRow = {
   featured: boolean;
   bestseller: boolean;
   image_banner: string | null;
+  gallery: string[] | null; // jsonb
   gradient: [string, string]; // jsonb
   created_at: string;
 };
@@ -48,6 +49,7 @@ export function rowToProduct(row: ProductRow): Product {
     featured: !!row.featured,
     bestseller: !!row.bestseller,
     imageBanner: row.image_banner ?? undefined,
+    gallery: Array.isArray(row.gallery) ? (row.gallery as string[]).filter(Boolean) : undefined,
     gradient: (Array.isArray(row.gradient) ? (row.gradient as [string, string]) : ["#0a3568", "#021024"]),
     createdAt: new Date(row.created_at).getTime(),
   };
@@ -73,6 +75,7 @@ export type ProductInsert = {
   featured: boolean;
   bestseller: boolean;
   image_banner: string | null;
+  gallery: string[] | null;
   gradient: [string, string];
 };
 
@@ -97,6 +100,7 @@ export function productToInsert(p: Omit<Product, "id" | "createdAt">): ProductIn
     featured: !!p.featured,
     bestseller: !!p.bestseller,
     image_banner: p.imageBanner ?? null,
+    gallery: p.gallery ?? null,
     gradient: p.gradient,
   };
 }
@@ -124,6 +128,7 @@ export function productToUpdate(patch: Partial<Product>): ProductUpdate {
   if (patch.featured !== undefined) out.featured = patch.featured;
   if (patch.bestseller !== undefined) out.bestseller = patch.bestseller;
   if (patch.imageBanner !== undefined) out.image_banner = patch.imageBanner;
+  if (patch.gallery !== undefined) out.gallery = patch.gallery;
   if (patch.gradient !== undefined) out.gradient = patch.gradient;
   return out;
 }

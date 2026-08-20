@@ -136,16 +136,19 @@
 .pd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; padding-block: 1.5rem 3rem; align-items: start; }
 .pd-gallery { position: sticky; top: calc(var(--nav-h) + 1rem); }
 .pd-hero-art {
-  aspect-ratio: 1 / 1; border-radius: var(--radius-lg); overflow: hidden;
-  display: grid; place-items: center; position: relative; border: 1px solid var(--border-faint);
+  position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); overflow: hidden;
+  display: flex; align-items: center; justify-content: center; position: relative; border: 1px solid var(--border-faint);
+  background-color: rgba(2,16,36,0.55);
 }
+.pd-hero-img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .pd-hero-art span { font-family: var(--font-display); font-weight: 800; font-size: clamp(8rem, 18vw, 14rem); color: rgba(193,232,255,0.20); letter-spacing: -0.05em; text-shadow: 0 8px 60px rgba(193,232,255,0.4); }
 .pd-preview-note { font-family: var(--font-display) !important; font-size: 0.78rem !important; font-weight: 500 !important; color: var(--accent-ice) !important; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: none !important; position: absolute; bottom: 1rem; left: 1rem; padding: 0.4rem 0.75rem; border-radius: var(--radius-pill); background: rgba(2,16,36,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(193,232,255,0.2); }
 .pd-thumb-row { display: flex; gap: 0.65rem; margin-top: 0.85rem; }
 .pd-thumb {
   flex: 1; aspect-ratio: 1 / 1; border-radius: var(--radius-md); border: 1px solid var(--border-faint); cursor: pointer; opacity: 0.65; transition: opacity var(--t-fast), border-color var(--t-fast);
-  display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; color: rgba(193,232,255,0.4); font-size: 1.4rem;
+  display: grid; place-items: center; overflow: hidden; padding: 0;
 }
+.pd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pd-thumb:hover, .pd-thumb.active { opacity: 1; border-color: var(--accent-ice); }
 
 .pd-info { display: flex; flex-direction: column; gap: 1.25rem; }
