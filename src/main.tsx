@@ -48,15 +48,15 @@ try {
       <ErrorBoundary>
         <CatalogProvider>
           <OrdersProvider>
-            <CartProvider>
-              <AdminAuthProvider>
-                <ShopperAuthProvider>
+            <ShopperAuthProvider>
+              <CartProvider>
+                <AdminAuthProvider>
                   <WishlistProvider>
-                  <App />
-                </WishlistProvider>
-                </ShopperAuthProvider>
-              </AdminAuthProvider>
-            </CartProvider>
+                    <App />
+                  </WishlistProvider>
+                </AdminAuthProvider>
+              </CartProvider>
+            </ShopperAuthProvider>
           </OrdersProvider>
         </CatalogProvider>
       </ErrorBoundary>

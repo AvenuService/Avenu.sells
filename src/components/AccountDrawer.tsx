@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useShopperAuth, displayName, displayUsername, avatarUrl } from "../store/ShopperAuthContext";
+import { useOrders } from "../store/OrdersContext";
 import { CloseIcon, EditIcon, LogoutIcon, ShieldIcon, UserIcon, GoogleIcon, CheckIcon } from "./Icons";
 import CookieModel3D from "./CookieModel3D";
 import {
@@ -76,6 +78,16 @@ export default function AccountDrawer() {
   const email = user?.email ?? "";
   const avatar = avatarUrl(session);
   const name = displayName(session);
+
+  const { orders } = useOrders();
+
+  const shopperOrders = useMemo(() => {
+    if (!email) return [];
+    const normalized = email.toLowerCase().trim();
+    return orders.filter(
+      (o) => o.customerEmail?.toLowerCase().trim() === normalized,
+    );
+  }, [orders, email]);
 
   // Cookie preference controls (moved here from the consent banner).
   const [cookiePrefs, setCookiePrefs] = useState<CookiePreferences>(getCookiePreferences);
@@ -210,6 +222,109 @@ export default function AccountDrawer() {
                     onChange={(e) => setUsername(e.target.value.replace(/\s+/g, ""))}
                   />
                   <small className="muted">Lowercase handle. Shown on your orders and account.</small>
+                </div>
+
+                {/* Order History Section */}
+                <div
+                  style={{
+                    marginTop: "1.2rem",
+                    padding: "1rem",
+                    background: "rgba(255, 255, 255, 0.02)",
+                    border: "1px solid rgba(255, 255, 255, 0.07)",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: "0.8rem",
+                    }}
+                  >
+                    <p className="admin-section-title-small" style={{ margin: 0 }}>
+                      Order history ({shopperOrders.length})
+                    </p>
+                  </div>
+
+                  {shopperOrders.length === 0 ? (
+                    <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+                      No orders placed yet with this account.
+                    </p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      {shopperOrders.map((ord) => (
+                        <div
+                          key={ord.id}
+                          style={{
+                            padding: "0.85rem",
+                            background: "rgba(255, 255, 255, 0.03)",
+                            border: "1px solid rgba(255, 255, 255, 0.06)",
+                            borderRadius: "10px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "0.4rem",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontWeight: 600, fontSize: "0.9rem", color: "#C1E8FF" }}>
+                              {ord.code}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                padding: "0.15rem 0.5rem",
+                                borderRadius: "12px",
+                                fontWeight: 600,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.03em",
+                                background:
+                                  ord.status === "paid" || ord.status === "fulfilled"
+                                    ? "rgba(34, 197, 94, 0.15)"
+                                    : ord.status === "cancelled"
+                                    ? "rgba(239, 68, 68, 0.15)"
+                                    : "rgba(234, 179, 8, 0.15)",
+                                color:
+                                  ord.status === "paid" || ord.status === "fulfilled"
+                                    ? "#4ade80"
+                                    : ord.status === "cancelled"
+                                    ? "#f87171"
+                                    : "#facc15",
+                              }}
+                            >
+                              {ord.status}
+                            </span>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", color: "rgba(226, 232, 240, 0.7)" }}>
+                            <span>{new Date(ord.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                            <strong style={{ color: "#f1f5f9" }}>${ord.total.toFixed(2)}</strong>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.2rem", paddingTop: "0.4rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                            <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                              {ord.items.length} {ord.items.length === 1 ? "item" : "items"}
+                            </span>
+                            <Link
+                              to={`/order/${ord.code}`}
+                              onClick={closeAccount}
+                              style={{
+                                fontSize: "0.78rem",
+                                color: "#7DA0CA",
+                                textDecoration: "none",
+                                fontWeight: 500,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.25rem",
+                              }}
+                            >
+                              View Order →
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* 3D Cookie Model - Premium Profile Touch */}

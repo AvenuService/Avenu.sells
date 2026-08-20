@@ -1,11 +1,25 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../store/CartContext";
 import { formatPrice } from "../data/products";
 import { CartIcon, CloseIcon, MinusIcon, PlusIcon, TrashIcon } from "./Icons";
 
 export default function CartDrawer() {
-  const { isOpen, closeCart, items, subtotal, shipping, total, updateQuantity, removeItem, count } = useCart();
+  const { isOpen, closeCart, items, subtotal, shipping, discount, total, coupon, applyCoupon, removeCoupon, updateQuantity, removeItem, count } = useCart();
   const serviceOnly = items.length > 0 && items.every((i) => i.type === "service");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState("");
+
+  function handleApplyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setPromoError("");
+    const res = applyCoupon(promoCode);
+    if (res.ok) {
+      setPromoCode("");
+    } else {
+      setPromoError(res.error || "Invalid promo code");
+    }
+  }
 
   return (
     <div className={`cart-drawer ${isOpen ? "open" : ""}`} aria-hidden={!isOpen}>
@@ -62,12 +76,59 @@ export default function CartDrawer() {
 
             <footer className="cart-foot">
               <div className="cart-line"><span className="muted">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+              {discount > 0 && (
+                <div className="cart-line" style={{ color: "#4ade80" }}>
+                  <span>Discount ({coupon?.code})</span>
+                  <span>-{formatPrice(discount)}</span>
+                </div>
+              )}
               {serviceOnly ? (
                 <div className="cart-line"><span className="muted">Delivery</span><span style={{ color: "var(--accent-ice)" }}>Digital handoff</span></div>
               ) : (
                 <div className="cart-line"><span className="muted">Shipping</span><span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span></div>
               )}
               <div className="cart-line cart-line-total"><span>Total</span><span>{formatPrice(total)}</span></div>
+
+              {/* Coupon Section */}
+              <div style={{ margin: "0.6rem 0", padding: "0.6rem 0", borderTop: "1px dashed rgba(255,255,255,0.1)", borderBottom: "1px dashed rgba(255,255,255,0.1)" }}>
+                {coupon ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(193, 232, 255, 0.08)", padding: "0.4rem 0.6rem", borderRadius: "6px" }}>
+                    <span style={{ fontSize: "0.82rem", color: "#C1E8FF", fontWeight: 600 }}>
+                      🎟️ {coupon.code} ({coupon.percent}% OFF)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.8rem" }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyCode} style={{ display: "flex", gap: "0.4rem" }}>
+                    <input
+                      type="text"
+                      placeholder="Promo code (e.g. AVENU10)"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      style={{
+                        flex: 1,
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "6px",
+                        padding: "0.35rem 0.6rem",
+                        color: "#fff",
+                        fontSize: "0.8rem",
+                      }}
+                    />
+                    <button type="submit" className="btn btn-ghost" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem" }}>
+                      Apply
+                    </button>
+                  </form>
+                )}
+                {promoError && <span style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>{promoError}</span>}
+              </div>
+
               {!serviceOnly && (
                 <p className="cart-hint muted">{subtotal < 150 ? `Add ${formatPrice(150 - subtotal)} for free shipping.` : "You've unlocked free shipping."}</p>
               )}

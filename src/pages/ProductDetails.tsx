@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { formatPrice, type Product } from "../data/products";
 import { useCatalog } from "../store/CatalogContext";
 import { useCart } from "../store/CartContext";
+import { useShopperAuth, displayName } from "../store/ShopperAuthContext";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 import Breadcrumbs from "../components/Breadcrumbs";
 import Rating from "../components/Rating";
 import ProductCard from "../components/ProductCard";
@@ -15,19 +17,53 @@ import {
   PlusIcon,
   ShieldIcon,
   SparkIcon,
+  StarIcon,
   SwapIcon,
   TruckIcon,
   ZapIcon,
 } from "../components/Icons";
+
+type Review = {
+  id: string;
+  productId: string;
+  author: string;
+  rating: number;
+  text: string;
+  createdAt: number;
+};
+
+const REVIEWS_KEY = "avenu.reviews.v1";
+
+function starArr(n: number) {
+  return [0, 1, 2, 3, 4].map((i) => i < n);
+}
 
 export default function ProductDetails() {
   const { slug } = useParams<{ slug: string }>();
   const { productBySlug, related } = useCatalog();
   const product = slug ? (productBySlug(slug) as Product | undefined) : undefined;
   const { addItem } = useCart();
+  const { session } = useShopperAuth();
   const [color, setColor] = useState<string>(product?.colors[0]?.name ?? "default");
   const [qty, setQty] = useState(1);
   const [thumb, setThumb] = useState(0);
+  const [storedReviews, setStoredReviews] = useLocalStorage<Review[]>(REVIEWS_KEY, []);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+
+  // Only keep reviews for this product
+  const productReviews = product
+    ? storedReviews.filter((r) => r.productId === product.id)
+    : [];
+  const baseRating = product?.rating ?? 0;
+  const baseReviews = product?.reviews ?? 0;
+  const totalReviews = baseReviews + productReviews.length;
+  const avgRating =
+    totalReviews === 0
+      ? baseRating
+      : (baseRating * baseReviews + productReviews.reduce((s, r) => s + r.rating, 0)) / totalReviews;
 
   useEffect(() => {
     if (product) {
@@ -36,8 +72,36 @@ export default function ProductDetails() {
       setThumb(0);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+    setReviewSubmitted(false);
+    setReviewError("");
+    setReviewRating(5);
+    setReviewText("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  function submitReview(e: React.FormEvent) {
+    e.preventDefault();
+    setReviewError("");
+    const text = reviewText.trim();
+    if (!text) {
+      setReviewError("Please write a short review.");
+      return;
+    }
+    if (!product) return;
+    const author = displayName(session) || session?.user?.email || "Avenu shopper";
+    const review: Review = {
+      id: "rev_" + Math.random().toString(36).slice(2, 10),
+      productId: product.id,
+      author,
+      rating: reviewRating,
+      text,
+      createdAt: Date.now(),
+    };
+    setStoredReviews((prev) => [review, ...prev]);
+    setReviewText("");
+    setReviewRating(5);
+    setReviewSubmitted(true);
+  }
 
   if (!product) {
     return (
@@ -116,7 +180,7 @@ export default function ProductDetails() {
         <div className="pd-info fade-up">
           <div className="pd-brand">
             <span className="pd-brand-name">{product.brand}</span>
-            <Rating value={product.rating} count={product.reviews} />
+            <Rating value={(totalReviews ? avgRating : baseRating).toFixed(1) as unknown as number} count={totalReviews} />
           </div>
 
           <h1 className="pd-title">{product.name}</h1>
@@ -224,6 +288,85 @@ export default function ProductDetails() {
           </div>
         </div>
       </div>
+
+      <section className="reviews-section">
+        <div className="reviews-head">
+          <h2>Customer reviews</h2>
+          <div className="reviews-summary">
+            <Rating value={avgRating} count={totalReviews} />
+            <span className="muted" style={{ marginLeft: "0.5rem" }}>
+              {productReviews.length + (baseReviews || 0)} rating(s)
+            </span>
+          </div>
+        </div>
+
+        {/* Write a review */}
+        {session ? (
+          <form className="review-form" onSubmit={submitReview}>
+            <p className="pd-section-title" style={{ marginBottom: "0.5rem" }}>Write a review</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", marginBottom: "0.6rem" }}>
+              {starArr(reviewRating).map((on, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`${i + 1} star`}
+                  onClick={() => setReviewRating(i + 1)}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: "2px" }}
+                >
+                  <StarIcon size={22} className={on ? "star-on" : "star-off"} />
+                </button>
+              ))}
+            </div>
+            <textarea
+              rows={4}
+              className="field"
+              placeholder="Share your experience…"
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+            />
+            {reviewError && <p style={{ color: "#f87171", fontSize: "0.8rem", margin: "0.4rem 0 0" }}>{reviewError}</p>}
+            <button type="submit" className="btn btn-primary" style={{ marginTop: "0.6rem" }}>
+              Submit review
+            </button>
+            {reviewSubmitted && (
+              <span style={{ color: "#4ade80", fontSize: "0.85rem", marginLeft: "0.75rem" }}>
+                <CheckIcon size={14} /> Thanks! Your review is live.
+              </span>
+            )}
+          </form>
+        ) : (
+          <p className="muted" style={{ fontSize: "0.85rem" }}>
+            Sign in with your Avenu account to write a review.
+          </p>
+        )}
+
+        {/* Reviews list */}
+        {productReviews.length === 0 ? (
+          <p className="muted" style={{ marginTop: "1rem" }}>No customer reviews yet. Be the first!</p>
+        ) : (
+          <div className="review-list">
+            {productReviews.map((r) => (
+              <div className="review" key={r.id}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <strong style={{ fontSize: "0.95rem" }}>{r.author}</strong>
+                  <span className="muted" style={{ fontSize: "0.75rem" }}>
+                    {new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+                <div className="rating" style={{ margin: "0.2rem 0" }}>
+                  <span className="rating-stars">
+                    {starArr(r.rating).map((on, i) => (
+                      <StarIcon key={i} size={14} className={on ? "star-on" : "star-off"} />
+                    ))}
+                  </span>
+                  <span className="rating-num">{r.rating}.0</span>
+                </div>
+                <p style={{ margin: "0.2rem 0 0", fontSize: "0.9rem", lineHeight: 1.55, color: "#e2e8f0" }}>{r.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="related-section">
         <div className="related-head">

@@ -21,6 +21,7 @@ import SearchModal from "./components/SearchModal";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import TrackOrder from "./pages/TrackOrder";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -135,6 +136,7 @@ export default function App() {
           <Route path="/product/:slug" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/track" element={<TrackOrder />} />
           <Route path="/order/:id" element={<OrderConfirmation />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />

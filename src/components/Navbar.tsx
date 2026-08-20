@@ -11,6 +11,7 @@ const navLinks = [
   { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
   { to: "/shop?category=software", label: "Software" },
+  { to: "/track", label: "Track Order" },
 ];
 
 export default function Navbar() {

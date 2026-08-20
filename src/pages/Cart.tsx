@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../store/CartContext";
 import { formatPrice } from "../data/products";
@@ -5,7 +6,20 @@ import Breadcrumbs from "../components/Breadcrumbs";
 import { CartIcon, MinusIcon, PlusIcon, TrashIcon, ArrowRight, TruckIcon, SparkIcon } from "../components/Icons";
 
 export default function Cart() {
-  const { items, subtotal, shipping, tax, total, updateQuantity, removeItem, clear, count } = useCart();
+  const { items, subtotal, shipping, tax, discount, coupon, total, applyCoupon, removeCoupon, updateQuantity, removeItem, clear, count } = useCart();
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState("");
+
+  function handleApply(e: React.FormEvent) {
+    e.preventDefault();
+    setPromoError("");
+    const res = applyCoupon(promoCode);
+    if (res.ok) {
+      setPromoCode("");
+    } else {
+      setPromoError(res.error || "Invalid promo code");
+    }
+  }
 
   if (items.length === 0) {
     return (
@@ -102,6 +116,12 @@ export default function Cart() {
             <h2>Order summary</h2>
           </div>
           <div className="summary-line"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+          {discount > 0 && (
+            <div className="summary-line" style={{ color: "#4ade80" }}>
+              <span>Discount ({coupon?.code})</span>
+              <span>-{formatPrice(discount)}</span>
+            </div>
+          )}
           {serviceOnly ? (
             <div className="summary-line"><span>Delivery</span><span style={{ color: "var(--accent-ice)" }}>Digital handoff</span></div>
           ) : (
@@ -111,9 +131,19 @@ export default function Cart() {
           <div className="summary-total"><span>Total</span><span>{formatPrice(total)}</span></div>
 
           <div className="promo-row">
-            <input className="field" placeholder="Promo code" aria-label="Promo code" />
-            <button className="btn btn-soft">Apply</button>
+            {coupon ? (
+              <div className="coupon-applied" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "rgba(193,232,255,0.08)", border: "1px solid rgba(193,232,255,0.25)", borderRadius: "8px", padding: "0.5rem 0.7rem" }}>
+                <span style={{ color: "var(--accent-ice)", fontWeight: 600, fontSize: "0.82rem" }}>🎟️ {coupon.code} ({coupon.percent}% OFF)</span>
+                <button type="button" onClick={removeCoupon} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.78rem" }}>Remove</button>
+              </div>
+            ) : (
+              <form onSubmit={handleApply} style={{ display: "contents" }}>
+                <input className="field" placeholder="Promo code" aria-label="Promo code" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} />
+                <button className="btn btn-soft">Apply</button>
+              </form>
+            )}
           </div>
+          {promoError && <p style={{ color: "#f87171", fontSize: "0.78rem", margin: "0.25rem 0 0" }}>{promoError}</p>}
 
           <Link to="/checkout" className="btn btn-primary btn-block" style={{ marginTop: "0.4rem" }}>Proceed to checkout</Link>
           <p className="muted center" style={{ fontSize: "0.78rem", marginTop: "0.6rem" }}>Secure checkout · Pay with card, Apple Pay, or PayPal</p>

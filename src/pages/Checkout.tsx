@@ -20,7 +20,7 @@ const paymentMethods = ["Litecoin (Crypto)", "Card", "Apple Pay", "PayPal", "Aff
 const CRYPTO_METHOD = "Litecoin (Crypto)";
 
 export default function Checkout() {
-  const { items, subtotal, tax, clear } = useCart();
+  const { items, subtotal, tax, discount, coupon, clear, removeCoupon } = useCart();
   const { createOrder } = useOrders();
   const { session, loading: authLoading, signInWithGoogle, error: authError } = useShopperAuth();
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ export default function Checkout() {
   const deliveryPrice = deliveryOptions.find((d) => d.id === delivery)?.price ?? 0;
   const freeShip = subtotal >= 150;
   const finalShipping = serviceOnly ? 0 : (freeShip ? 0 : deliveryPrice);
-  const total = subtotal + finalShipping + tax;
+  const total = Math.max(0, subtotal - discount + finalShipping + tax);
 
   // Fetch the live LTC quote whenever the order total changes (only matters on
   // the crypto method, but it's cheap to keep warm).
@@ -104,7 +104,10 @@ export default function Checkout() {
           usdTotal: cryptoQuote?.usdTotal ?? total,
           rateUsd: cryptoQuote?.rateUsd ?? 0,
           network: "litecoin",
+          ...(discount > 0 ? { couponCode: coupon?.code, discountApplied: discount } : {}),
         })
+      : discount > 0
+      ? JSON.stringify({ couponCode: coupon?.code, discountApplied: discount })
       : undefined;
 
     try {
@@ -122,9 +125,9 @@ export default function Checkout() {
         total,
         currency: "USD",
       });
-      // Created returns null on failure (logged in context) — we still navigate
-      // so the customer sees a confirmation regardless of backend state.
+      // After a successful order, clear the applied coupon too.
       clear();
+      removeCoupon();
       const orderCode = created?.code ?? code;
       const dest = isCrypto
         ? `/order/${orderCode}?pay=crypto&wallet=${encodeURIComponent(cryptoQuote?.wallet ?? "")}&ltc=${encodeURIComponent((cryptoQuote?.ltcAmount ?? 0).toFixed(6))}&usd=${encodeURIComponent((cryptoQuote?.usdTotal ?? total).toFixed(2))}`
@@ -133,6 +136,7 @@ export default function Checkout() {
     } catch {
       // Even if order write fails, don't hang the customer. Fall through to confirmation.
       clear();
+      removeCoupon();
       const dest = isCrypto
         ? `/order/${code}?pay=crypto&wallet=${encodeURIComponent(cryptoQuote?.wallet ?? "")}&ltc=${encodeURIComponent((cryptoQuote?.ltcAmount ?? 0).toFixed(6))}&usd=${encodeURIComponent((cryptoQuote?.usdTotal ?? total).toFixed(2))}`
         : `/order/${code}`;
@@ -370,6 +374,12 @@ export default function Checkout() {
 
           <hr className="divider" />
           <div className="summary-line"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+          {discount > 0 && (
+            <div className="summary-line" style={{ color: "#4ade80" }}>
+              <span>Discount ({coupon?.code})</span>
+              <span>-{formatPrice(discount)}</span>
+            </div>
+          )}
           {serviceOnly ? (
             <div className="summary-line"><span>Delivery</span><span style={{ color: "var(--accent-ice)" }}>Digital handoff</span></div>
           ) : (
