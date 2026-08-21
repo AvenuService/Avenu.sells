@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { useOrders } from "../../store/OrdersContext";
 import { formatPrice } from "../../data/products";
 import type { Order, OrderStatus, OrderBrief } from "../../data/orders";
 import { supabaseConfigured } from "../../store/supabaseClient";
-import { SearchIcon, CheckIcon, ArrowRight } from "../../components/Icons";
+import { SearchIcon, CheckIcon, ArrowRight, TrashIcon } from "../../components/Icons";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const STATUSES: OrderStatus[] = ["new", "paid", "fulfilled", "cancelled"];
 
@@ -47,10 +48,11 @@ function BriefPreview({ brief }: { brief: OrderBrief | null | undefined }) {
 }
 
 export default function AdminOrders() {
-  const { orders, status, error, updateStatus, refresh } = useOrders();
+  const { orders, status, error, updateStatus, deleteOrder, refresh } = useOrders();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | OrderStatus>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
@@ -87,9 +89,9 @@ export default function AdminOrders() {
     <AdminLayout title="Orders" subtitle="Every order placed on Avenu, with quick status controls.">
       {!supabaseConfigured && (
         <div className="admin-config-warn card">
-          <div className="acw-icon">⚠</div>
+          <div className="acw-icon">ÔÜá</div>
           <div>
-            <strong>Supabase not configured — orders only save locally to this browser.</strong>
+            <strong>Supabase not configured ÔÇö orders only save locally to this browser.</strong>
             <p className="muted">
               Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to
               <code>.env.local</code>. Until then, completed checkouts appear here only in this session.
@@ -99,11 +101,11 @@ export default function AdminOrders() {
       )}
 
       {status === "loading" && (
-        <div className="admin-sync"><span className="spinner" /> <span className="muted">Loading orders…</span></div>
+        <div className="admin-sync"><span className="spinner" /> <span className="muted">Loading ordersÔÇª</span></div>
       )}
       {status === "error" && (
         <div className="admin-config-warn card">
-          <div className="acw-icon">⚠</div>
+          <div className="acw-icon">ÔÜá</div>
           <div>
             <strong>Could not load orders from Supabase.</strong>
             <p className="muted">{error}</p>
@@ -126,7 +128,7 @@ export default function AdminOrders() {
         </div>
         <div className="card admin-stat">
           <div className="admin-stat-head"><span className="admin-stat-label">Recognized revenue</span></div>
-          <div className="admin-stat-value">{orders.length ? formatPrice(revenue) : "—"}</div>
+          <div className="admin-stat-value">{orders.length ? formatPrice(revenue) : "ÔÇö"}</div>
           <div className="admin-stat-hint muted">paid + fulfilled</div>
         </div>
       </div>
@@ -136,7 +138,7 @@ export default function AdminOrders() {
           <SearchIcon size={16} />
           <input
             className="aps-search"
-            placeholder="Search by code, email, or name…"
+            placeholder="Search by code, email, or nameÔÇª"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -159,7 +161,7 @@ export default function AdminOrders() {
 
       {filtered.length === 0 ? (
         <div className="admin-empty card" style={{ marginTop: "1.5rem" }}>
-          <div className="admin-empty-glyph">∅</div>
+          <div className="admin-empty-glyph">Ôêà</div>
           <h3>{orders.length === 0 ? "No orders yet" : "Nothing matched that filter"}</h3>
           <p className="muted">
             {orders.length === 0
@@ -193,10 +195,32 @@ export default function AdminOrders() {
                 />
               </button>
 
-              {expanded === o.id && <OrderDetail order={o} onSetStatus={(s) => void updateStatus(o.id, s)} />}
+              {expanded === o.id && (
+                <OrderDetail
+                  order={o}
+                  onSetStatus={(s) => void updateStatus(o.id, s)}
+                  onDelete={() => setConfirmDeleteId(o.id)}
+                />
+              )}
             </div>
           ))}
         </div>
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          open
+          title="Delete this order?"
+          message="This permanently removes the order from the admin panel. This cannot be undone."
+          confirmLabel="Delete order"
+          danger
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={async () => {
+            const id = confirmDeleteId;
+            setConfirmDeleteId(null);
+            if (id) await deleteOrder(id);
+          }}
+        />
       )}
     </AdminLayout>
   );
@@ -205,21 +229,28 @@ export default function AdminOrders() {
 function OrderDetail({
   order,
   onSetStatus,
+  onDelete,
 }: {
   order: Order;
   onSetStatus: (s: OrderStatus) => void;
+  onDelete: () => void;
 }) {
   return (
     <div className="admin-order-detail">
       <div className="admin-order-detail-grid">
         <div>
-          <p className="admin-section-title-small">Items</p>
+          <div className="admin-order-detail-head">
+            <p className="admin-section-title-small">Items</p>
+            <button type="button" className="order-delete-btn" onClick={onDelete} aria-label="Delete order">
+              <TrashIcon size={13} /> Delete order
+            </button>
+          </div>
           <ul className="orders-items">
             {order.items.map((it, i) => (
               <li key={i}>
-                <span className="order-qty">×{it.quantity}</span>
+                <span className="order-qty">├ù{it.quantity}</span>
                 <span className="order-name">{it.name}</span>
-                {it.color && <span className="muted order-color">· {it.color}</span>}
+                {it.color && <span className="muted order-color">┬À {it.color}</span>}
                 <span className="order-price">{formatPrice(it.price * it.quantity)}</span>
               </li>
             ))}
@@ -239,7 +270,7 @@ function OrderDetail({
 
         <div>
           <p className="admin-section-title-small">Customer</p>
-          <p><strong>{order.customerName || "—"}</strong></p>
+          <p><strong>{order.customerName || "ÔÇö"}</strong></p>
           <p className="muted">{order.customerEmail || "no email on file"}</p>
           <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
             Placed {new Date(order.createdAt).toLocaleString()}

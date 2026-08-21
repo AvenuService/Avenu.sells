@@ -27,6 +27,7 @@ export default function Checkout() {
   const [delivery, setDelivery] = useState<Delivery>("standard");
   const [payment, setPayment] = useState<string>(CRYPTO_METHOD);
   const [placed, setPlaced] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   const [cryptoQuote, setCryptoQuote] = useState<CryptoQuote | null>(null);
   const [cryptoLoading, setCryptoLoading] = useState(false);
@@ -34,10 +35,13 @@ export default function Checkout() {
   const formRef = useRef<HTMLFormElement>(null);
 
   const serviceOnly = items.length > 0 && items.every((i) => i.type === "service");
+  const needsShipping = items.some((i) => i.type === "physical");
+  const digitalDelivery = items.length > 0 && !needsShipping;
   const deliveryPrice = deliveryOptions.find((d) => d.id === delivery)?.price ?? 0;
   const freeShip = subtotal >= 150;
-  const finalShipping = serviceOnly ? 0 : (freeShip ? 0 : deliveryPrice);
+  const finalShipping = needsShipping ? (freeShip ? 0 : deliveryPrice) : 0;
   const total = Math.max(0, subtotal - discount + finalShipping + tax);
+  const isCrypto = payment === CRYPTO_METHOD;
 
   // Fetch the live LTC quote whenever the order total changes (only matters on
   // the crypto method, but it's cheap to keep warm).
@@ -68,6 +72,11 @@ export default function Checkout() {
 
   async function placeOrder(e: React.FormEvent) {
     e.preventDefault();
+    if (!isCrypto) {
+      setOrderError("Card, Apple Pay, PayPal, and Affirm are coming soon. Please pay with Litecoin for now.");
+      return;
+    }
+    setOrderError(null);
     setPlaced(true);
 
     const code = generateOrderCode();
@@ -95,20 +104,15 @@ export default function Checkout() {
       type: i.type,
     }));
 
-    const isCrypto = payment === CRYPTO_METHOD;
-    const notes = isCrypto
-      ? JSON.stringify({
-          paymentMethod: "litecoin",
-          wallet: cryptoQuote?.wallet ?? "",
-          ltcAmount: cryptoQuote?.ltcAmount ?? 0,
-          usdTotal: cryptoQuote?.usdTotal ?? total,
-          rateUsd: cryptoQuote?.rateUsd ?? 0,
-          network: "litecoin",
-          ...(discount > 0 ? { couponCode: coupon?.code, discountApplied: discount } : {}),
-        })
-      : discount > 0
-      ? JSON.stringify({ couponCode: coupon?.code, discountApplied: discount })
-      : undefined;
+    const notes = JSON.stringify({
+      paymentMethod: "litecoin",
+      wallet: cryptoQuote?.wallet ?? "",
+      ltcAmount: cryptoQuote?.ltcAmount ?? 0,
+      usdTotal: cryptoQuote?.usdTotal ?? total,
+      rateUsd: cryptoQuote?.rateUsd ?? 0,
+      network: "litecoin",
+      ...(discount > 0 ? { couponCode: coupon?.code, discountApplied: discount } : {}),
+    });
 
     try {
       const created = await createOrder({
@@ -125,22 +129,18 @@ export default function Checkout() {
         total,
         currency: "USD",
       });
-      // After a successful order, clear the applied coupon too.
+      if (!created) {
+        setPlaced(false);
+        setOrderError("We couldn't save your order. Please try again — your cart is still here.");
+        return;
+      }
       clear();
       removeCoupon();
-      const orderCode = created?.code ?? code;
-      const dest = isCrypto
-        ? `/order/${orderCode}?pay=crypto&wallet=${encodeURIComponent(cryptoQuote?.wallet ?? "")}&ltc=${encodeURIComponent((cryptoQuote?.ltcAmount ?? 0).toFixed(6))}&usd=${encodeURIComponent((cryptoQuote?.usdTotal ?? total).toFixed(2))}`
-        : `/order/${orderCode}`;
+      const dest = `/order/${created.code}?pay=crypto&wallet=${encodeURIComponent(cryptoQuote?.wallet ?? "")}&ltc=${encodeURIComponent((cryptoQuote?.ltcAmount ?? 0).toFixed(6))}&usd=${encodeURIComponent((cryptoQuote?.usdTotal ?? total).toFixed(2))}`;
       setTimeout(() => navigate(dest), 700);
     } catch {
-      // Even if order write fails, don't hang the customer. Fall through to confirmation.
-      clear();
-      removeCoupon();
-      const dest = isCrypto
-        ? `/order/${code}?pay=crypto&wallet=${encodeURIComponent(cryptoQuote?.wallet ?? "")}&ltc=${encodeURIComponent((cryptoQuote?.ltcAmount ?? 0).toFixed(6))}&usd=${encodeURIComponent((cryptoQuote?.usdTotal ?? total).toFixed(2))}`
-        : `/order/${code}`;
-      setTimeout(() => navigate(dest), 700);
+      setPlaced(false);
+      setOrderError("We couldn't save your order. Please try again — your cart is still here.");
     }
   }
 
@@ -241,6 +241,13 @@ export default function Checkout() {
 
       <h1 className="section-title fade-up" style={{ marginBottom: "1.6rem" }}>Checkout</h1>
 
+      {orderError && (
+        <div className="card" style={{ padding: "1.1rem 1.3rem", marginBottom: "1.4rem", borderColor: "rgba(255,138,138,0.35)", color: "#ff8a8a" }}>
+          <strong>Order not placed.</strong>
+          <div className="muted" style={{ fontSize: "0.88rem", marginTop: "0.25rem", color: "inherit" }}>{orderError}</div>
+        </div>
+      )}
+
       {placed && (
         <div className="card" style={{ padding: "1.5rem 1.4rem", marginBottom: "1.4rem", display: "flex", gap: "0.85rem", alignItems: "center", borderColor: "rgba(193,232,255,0.3)" }}>
           <span className="added-check" style={{ width: 32, height: 32, flexShrink: 0 }}><CheckIcon size={16} /></span>
@@ -255,10 +262,16 @@ export default function Checkout() {
             <div className="form-grid">
               <div className="form-group"><label htmlFor="email">Email</label><input id="email" className="field" type="email" placeholder="you@avenu.sale" required defaultValue={sessionEmail} /></div>
               <div className="form-group"><label htmlFor="phone">Phone</label><input id="phone" className="field" type="tel" placeholder="+1 555 000 0000" /></div>
+              {!needsShipping && (
+                <>
+                  <div className="form-group"><label htmlFor="firstName">First name</label><input id="firstName" className="field" placeholder="Avery" required /></div>
+                  <div className="form-group"><label htmlFor="lastName">Last name</label><input id="lastName" className="field" placeholder="Frost" required /></div>
+                </>
+              )}
             </div>
           </section>
 
-          {!serviceOnly && (
+          {needsShipping && (
             <section className="checkout-section fade-up">
               <h2>Shipping address</h2>
               <div className="form-grid">
@@ -293,7 +306,7 @@ export default function Checkout() {
             </section>
           )}
 
-          {!serviceOnly && (
+          {needsShipping && (
             <section className="checkout-section fade-up">
               <h2>Delivery</h2>
               <div className="delivery-options">
@@ -313,7 +326,7 @@ export default function Checkout() {
             <h2>Payment</h2>
             <div className="payment-methods">
               {paymentMethods.map((m) => (
-                <button type="button" key={m} className={`payment-method ${payment === m ? "active" : ""}`} onClick={() => setPayment(m)}>{m}</button>
+                <button type="button" key={m} className={`payment-method ${payment === m ? "active" : ""}`} onClick={() => { setPayment(m); setOrderError(null); }}>{m}</button>
               ))}
             </div>
 
@@ -328,16 +341,10 @@ export default function Checkout() {
               </div>
             )}
 
-            {payment === "Card" && (
-              <div className="form-grid" style={{ marginTop: "1rem" }}>
-                <div className="form-group full"><label htmlFor="card">Card number</label><input id="card" className="field" placeholder="0000 0000 0000 0000" inputMode="numeric" /></div>
-                <div className="form-group"><label htmlFor="exp">Expiry</label><input id="exp" className="field" placeholder="MM / YY" /></div>
-                <div className="form-group"><label htmlFor="cvc">Security code</label><input id="cvc" className="field" placeholder="CVC" inputMode="numeric" /></div>
-                <div className="form-group full"><label htmlFor="name">Name on card</label><input id="name" className="field" placeholder="Avery Frost" /></div>
-              </div>
-            )}
-            {payment !== CRYPTO_METHOD && payment !== "Card" && (
-              <p className="muted" style={{ marginTop: "1rem", fontSize: "0.9rem" }}>You'll be redirected to {payment} to complete your purchase securely.</p>
+            {payment !== CRYPTO_METHOD && (
+              <p className="muted" style={{ marginTop: "1rem", fontSize: "0.9rem" }}>
+                {payment} checkout is coming soon. Choose <strong>Litecoin (Crypto)</strong> to complete your order today.
+              </p>
             )}
             {payment === CRYPTO_METHOD && (
               <p className="muted" style={{ marginTop: "0.9rem", fontSize: "0.9rem" }}>
@@ -346,11 +353,11 @@ export default function Checkout() {
             )}
           </section>
 
-          <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={placed} style={{ marginTop: "0.6rem" }}>
-            {placed ? "Placing order…" : payment === CRYPTO_METHOD ? <>Place order · Pay with Litecoin <ArrowRight size={16} /></> : <>Place order · {formatPrice(total)} <ArrowRight size={16} /></>}
+          <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={placed || !isCrypto} style={{ marginTop: "0.6rem" }}>
+            {placed ? "Placing order…" : isCrypto ? <>Place order · Pay with Litecoin <ArrowRight size={16} /></> : <>{payment} coming soon</>}
           </button>
           <div className="summary-meta" style={{ marginTop: "0.85rem", justifyContent: "center" }}>
-            <ShieldIcon size={14} /><span>Encrypted, PCI-compliant checkout · Your card details never touch Avenu.</span>
+            <ShieldIcon size={14} /><span>{isCrypto ? "Pay on-chain with Litecoin · Verify your TXID after placing the order." : "Encrypted checkout · Card details never touch Avenu."}</span>
           </div>
         </form>
 
@@ -380,8 +387,8 @@ export default function Checkout() {
               <span>-{formatPrice(discount)}</span>
             </div>
           )}
-          {serviceOnly ? (
-            <div className="summary-line"><span>Delivery</span><span style={{ color: "var(--accent-ice)" }}>Digital handoff</span></div>
+          {digitalDelivery ? (
+            <div className="summary-line"><span>Delivery</span><span style={{ color: "var(--accent-ice)" }}>{serviceOnly ? "Digital handoff" : "Instant access"}</span></div>
           ) : (
             <div className="summary-line"><span>Delivery</span><span>{finalShipping === 0 ? "Free" : formatPrice(finalShipping)}</span></div>
           )}

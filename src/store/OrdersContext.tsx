@@ -27,6 +27,7 @@ type OrdersContextValue = {
   byId: (id: string) => Order | undefined;
   createOrder: (data: Omit<Order, "id" | "createdAt" | "updatedAt">) => Promise<Order | null>;
   updateStatus: (id: string, status: OrderStatus, notes?: string) => Promise<boolean>;
+  deleteOrder: (id: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 };
 
@@ -182,13 +183,34 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     [setFallback],
   );
 
+  const deleteOrder = useCallback<OrdersContextValue["deleteOrder"]>(
+    async (id) => {
+      if (!supabaseConfigured) {
+        setFallback((prev) => prev.filter((o) => o.id !== id));
+        setOrders((prev) => prev.filter((o) => o.id !== id));
+        return true;
+      }
+      try {
+        const sb = assertSupabase();
+        const { error: err } = await sb.from(TABLE).delete().eq("id", id);
+        if (err) throw new Error(err.message || `Supabase error ${err.code ?? ""}`.trim());
+        setOrders((prev) => prev.filter((o) => o.id !== id));
+        return true;
+      } catch (e) {
+        setError(errToMessage(e));
+        return false;
+      }
+    },
+    [setFallback],
+  );
+
   const byCode = useCallback((code: string) => orders.find((o) => o.code === code), [orders]);
   const byId = useCallback((id: string) => orders.find((o) => o.id === id), [orders]);
   const refresh = useCallback(async () => { void loadFromSupabase(); }, [loadFromSupabase]);
 
   const value = useMemo<OrdersContextValue>(
-    () => ({ orders, status, error, byCode, byId, createOrder, updateStatus, refresh }),
-    [orders, status, error, byCode, byId, createOrder, updateStatus, refresh],
+    () => ({ orders, status, error, byCode, byId, createOrder, updateStatus, deleteOrder, refresh }),
+    [orders, status, error, byCode, byId, createOrder, updateStatus, deleteOrder, refresh],
   );
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>;

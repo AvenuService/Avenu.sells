@@ -120,6 +120,7 @@ export default function App() {
         <Route path="/admin/products/new" element={<AdminGuard view="new" />} />
         <Route path="/admin/products/:id" element={<AdminGuard view="edit" />} />
         <Route path="/admin/orders" element={<AdminGuard view="orders" />} />
+        <Route path="/admin/categories" element={<AdminGuard view="categories" />} />
 
         {/* Storefront layout: hides on /admin/* */}
         <Route element={<StorefrontChrome />}>

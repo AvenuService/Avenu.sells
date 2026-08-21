@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { formatPrice, type Product } from "../data/products";
+import { categories, formatPrice, type Product } from "../data/products";
 import { useCatalog } from "../store/CatalogContext";
 import { useCart } from "../store/CartContext";
 import { useShopperAuth, displayName } from "../store/ShopperAuthContext";
@@ -116,6 +116,10 @@ export default function ProductDetails() {
   const relatedProducts = related(product.slug, 4);
   const inStock = product.stock > 0;
   const isService = product.type === "service";
+  const isDigital = product.type === "digital";
+  const categoryLabel =
+    categories.find((c) => c.slug === product.category)?.name ??
+    product.category.replace(/[-_]/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 
   return (
     <div className="container">
@@ -124,7 +128,7 @@ export default function ProductDetails() {
           items={[
             { label: "Home", to: "/" },
             { label: "Shop", to: "/shop" },
-            { label: product.category, to: `/shop?category=${product.category}` },
+            { label: categoryLabel, to: `/shop?category=${product.category}` },
             { label: product.name },
           ]}
         />
@@ -245,6 +249,12 @@ export default function ProductDetails() {
               <div className="pd-extra-row"><ZapIcon size={18} /><span><strong>Source code handoff</strong> — you own everything we build. No lock-in.</span></div>
               <div className="pd-extra-row"><ShieldIcon size={18} /><span><strong>Post-launch support</strong> included with every package. We don't disappear after deploy.</span></div>
             </div>
+          ) : isDigital ? (
+            <div className="pd-extra">
+              <div className="pd-extra-row"><ZapIcon size={18} /><span><strong>Instant access</strong> after payment clears — no shipping wait.</span></div>
+              <div className="pd-extra-row"><SparkIcon size={18} /><span><strong>Download anytime</strong> from your order confirmation and account.</span></div>
+              <div className="pd-extra-row"><ShieldIcon size={18} /><span><strong>Secure delivery</strong> — files and keys stay tied to your purchase.</span></div>
+            </div>
           ) : (
             <div className="pd-extra">
               <div className="pd-extra-row"><TruckIcon size={18} /><span><strong>Free 2-day shipping</strong> within the contiguous US. Ships next business day from your order.</span></div>
@@ -269,13 +279,19 @@ export default function ProductDetails() {
             <p className="pd-section-title">Specifications</p>
             <dl className="pd-meta-table">
               <dt>Studio</dt><dd>{product.brand}</dd>
-              <dt>Category</dt><dd style={{ textTransform: "capitalize" }}>{product.category}</dd>
+              <dt>Category</dt><dd>{categoryLabel}</dd>
               {isService ? (
                 <>
                   <dt>Delivery</dt><dd>Digital · via email</dd>
                   <dt>Scope</dt><dd>Custom build, quoted per package</dd>
                   <dt>Timeline</dt><dd>2–6 weeks depending on tier</dd>
                   <dt>Ownership</dt><dd>You own the source</dd>
+                </>
+              ) : isDigital ? (
+                <>
+                  <dt>Delivery</dt><dd>Digital · instant access</dd>
+                  <dt>Format</dt><dd>Download / license key</dd>
+                  <dt>SKU</dt><dd>{product.id.toUpperCase()}</dd>
                 </>
               ) : (
                 <>

@@ -11,12 +11,14 @@ import {
   ZapIcon,
   LogoutIcon,
   CartIcon,
+  GlobeIcon,
 } from "../../components/Icons";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: ZapIcon, end: true },
   { to: "/admin/products", label: "Products", icon: ShieldIcon, end: false },
   { to: "/admin/products/new", label: "Add product", icon: PlusIcon, end: false },
+  { to: "/admin/categories", label: "Categories", icon: GlobeIcon, end: false },
   { to: "/admin/orders", label: "Orders", icon: CartIcon, end: false },
 ];
 

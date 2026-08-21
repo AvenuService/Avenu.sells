@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { CatalogProvider } from "./store/CatalogContext";
+import { CategoriesProvider } from "./store/CategoriesContext";
 import { CartProvider } from "./store/CartContext";
 import { OrdersProvider } from "./store/OrdersContext";
 import { AdminAuthProvider } from "./store/AdminAuthContext";
@@ -47,17 +48,19 @@ try {
     <StrictMode>
       <ErrorBoundary>
         <CatalogProvider>
-          <OrdersProvider>
-            <ShopperAuthProvider>
-              <CartProvider>
-                <AdminAuthProvider>
-                  <WishlistProvider>
-                    <App />
-                  </WishlistProvider>
-                </AdminAuthProvider>
-              </CartProvider>
-            </ShopperAuthProvider>
-          </OrdersProvider>
+          <CategoriesProvider>
+            <OrdersProvider>
+              <ShopperAuthProvider>
+                <CartProvider>
+                  <AdminAuthProvider>
+                    <WishlistProvider>
+                      <App />
+                    </WishlistProvider>
+                  </AdminAuthProvider>
+                </CartProvider>
+              </ShopperAuthProvider>
+            </OrdersProvider>
+          </CategoriesProvider>
         </CatalogProvider>
       </ErrorBoundary>
     </StrictMode>,

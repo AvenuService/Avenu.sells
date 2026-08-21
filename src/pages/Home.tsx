@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useCatalog } from "../store/CatalogContext";
+import { useCategories } from "../store/CategoriesContext";
 import Seo from "../components/Seo";
 import ProductCard from "../components/ProductCard";
 import SplineBackground from "../components/SplineBackground";
@@ -25,6 +26,7 @@ const cats = [
 
 export default function Home() {
   const { products, status } = useCatalog();
+  const { imageFor } = useCategories();
   const featured = products.filter((p) => p.featured).slice(0, 4);
   const bestsellers = products.filter((p) => p.bestseller).slice(0, 4);
   const empty = products.length === 0 && status !== "loading";
@@ -141,16 +143,24 @@ export default function Home() {
             </div>
           </div>
           <div className="cat-grid stagger">
-                        {cats
+            {cats
               .filter((c) => products.some((p) => p.category === c.slug))
-              .map((c) => (
-              <Link to={`/shop?category=${c.slug}`} key={c.slug} className="cat-card">
-                <span className="cat-idx">{c.idx}</span>
-                <ArrowRight className="cat-arrow" size={18} />
-                <h3>{c.name}</h3>
-                <p>Explore {c.name.toLowerCase()} essentials</p>
-              </Link>
-            ))}
+              .map((c) => {
+                const logo = imageFor(c.slug);
+                return (
+                  <Link to={`/shop?category=${c.slug}`} key={c.slug} className={`cat-card${logo ? " has-logo" : ""}`}>
+                    <span className="cat-idx">{c.idx}</span>
+                    <ArrowRight className="cat-arrow" size={18} />
+                    {logo && (
+                      <span className="cat-logo-wrap" aria-hidden="true">
+                        <img src={logo} alt="" className="cat-logo" />
+                      </span>
+                    )}
+                    <h3>{c.name}</h3>
+                    <p>Explore {c.name.toLowerCase()} essentials</p>
+                  </Link>
+                );
+              })}
           </div>
         </div>
       </section>

@@ -71,9 +71,23 @@
 .cat-card:hover::before { opacity: 1; }
 .cat-card h3 { font-size: 1.25rem; margin-bottom: 0.3rem; position: relative; z-index: 1; }
 .cat-card p { font-size: 0.85rem; color: var(--accent-muted); position: relative; z-index: 1; }
-.cat-card .cat-arrow { position: absolute; top: 1.2rem; right: 1.2rem; color: var(--accent-ice); opacity: 0.4; transition: opacity var(--t-fast), transform var(--t-fast); }
+.cat-arrow { color: var(--accent-ice); opacity: 0.4; position: absolute; bottom: 1.2rem; right: 1.2rem; z-index: 2; transition: opacity var(--t-fast), transform var(--t-fast); }
 .cat-card:hover .cat-arrow { opacity: 1; transform: translate(2px, -2px); }
-.cat-card .cat-idx { position: absolute; top: 1.2rem; left: 1.2rem; font-family: var(--font-display); font-size: 0.78rem; color: var(--accent-muted); letter-spacing: 0.16em; }
+.cat-idx { font-family: var(--font-display); font-size: 0.78rem; color: var(--accent-muted); letter-spacing: 0.16em; position: absolute; top: 1.2rem; left: 1.2rem; z-index: 2; }
+.cat-card.has-logo .cat-idx { opacity: 0; pointer-events: none; }
+.cat-logo-wrap {
+  position: absolute; top: 1.15rem; left: 1.15rem; right: 1.15rem;
+  height: 42%; max-height: 140px;
+  display: grid; place-items: center;
+  z-index: 2; pointer-events: none;
+}
+.cat-logo {
+  width: auto; height: auto;
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; object-position: center;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35));
+}
+.cat-card:hover .cat-logo { opacity: 0.96; }
 
 /* value props */
 .value-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
